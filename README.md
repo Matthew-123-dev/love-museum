@@ -1,6 +1,6 @@
 # The Museum of Us
 
-A romantic digital love museum crafted in **crimson velvet (`#920d25`)**, **warm champagne (`#f4dfc9`)**, **parchment ivory (`#f9eede`)**, and **crisp white (`#ffffff`)**—designed as a keepsake space for couples to display memories, heirloom lace frames, and love letters.
+A romantic digital love museum crafted in **crimson velvet (`#920d25`)**, **warm champagne (`#f4dfc9`)**, **parchment ivory (`#f9eede`)**, and **crisp white (`#ffffff`)**—designed as a keepsake space for couples to curate memories, heirloom lace frames, and love letters.
 
 ---
 
@@ -10,15 +10,14 @@ A romantic digital love museum crafted in **crimson velvet (`#920d25`)**, **warm
 - **The Foyer:** Oversized display typography featuring an oval `"O"` cameo frame (`images/love1.jpg` or a custom couple portrait), an illuminated glass cloche holding an eternal rose and vow scroll, and four orbiting wax-sealed floating love letters.
 - **Unified Museum Gallery:**
   - **Heirloom Lace Display Cases:** Scalloped rectangular (`border-image`) and oval cameo SVG-masked lace frames arranged collage-style over a crimson backdrop.
-  - **Wavy String Memory Wall:** Slanted memory cards hung from punched top eyelets along a dynamic SVG Bézier thread with foreground thread-through overlays and scroll-velocity pendulum sway.
+  - **Wavy String Memory Wall:** Slanted memory cards hung from punched top eyelets (`card-eyelet`) along a dynamic SVG Bézier thread with foreground thread-through overlays and scroll-velocity pendulum sway.
   - **Unsealable Secret Notes & Lace Lightbox:** Every artifact opens inside a large lace display lightbox with an optional hidden note drawer on the back.
 - **The Curatorial Vault:** Hand-drawn border frame for adding new memories, downloading JSON archive backups, or importing saved collections.
 
-### 2. Couple Museum Onboarding & Heirloom Unlock
-- **Sample Exhibition & Onboarding (`/` & `/setup`):**
-  - Visitors first explore the live **Sample Exhibition** (`Him` & `Her`) with direct buttons to **Create Your Own Museum** (`/setup`) or **Enter PIN** (`/setup#join`).
-  - **Setup Flow:** Customize all 4 Foyer love letters upfront (or fill defaults with one click), curate **at least 3 compulsory memories**, and generate a **unique 6-character PIN** and shareable partner link (`/?pin=XXXXXX`).
-- **Heirloom Unlock Tier (`POST /api/payment`):** Optional one-time unlock (`₦5,000` / `$7`) supporting **Paystack** (Card, Bank Transfer, USSD, OPay), **Flutterwave**, and an external **Merchant of Record** checkout URL (`MOR_CHECKOUT_URL`), with instant sandbox test mode when payment keys are unset:
+### 2. Couple Setup, PIN Sharing & Heirloom Unlock
+- **Sample Exhibition (`/`):** Visitors first explore the live sample gallery (`Him` & `Her`) with clear buttons to **Create Your Own Museum** (`/setup`) or **Enter PIN** (`/setup#join`).
+- **Guided Setup Flow (`/setup`):** Write 4 custom Foyer love letters upfront (or fill defaults with one click), curate **at least 3 compulsory memories**, and receive a **unique 6-character PIN** + shareable partner link (`/?pin=XXXXXX`).
+- **Heirloom Unlock Tier (`POST /api/payment`):** Optional one-time unlock (`₦5,000` / `$7`) supporting **Paystack** (Card, Bank Transfer, USSD, OPay), **Flutterwave**, and an external **Merchant of Record** URL (`MOR_CHECKOUT_URL`), with instant sandbox demo mode when keys are unset:
   - Custom partner names with subtle hover/tap nickname reveals
   - Custom oval Hero `"O"` cameo photo upload
   - Unlimited memories (lifts the 8-memory free tier cap)
@@ -47,6 +46,7 @@ A romantic digital love museum crafted in **crimson velvet (`#920d25`)**, **warm
 ├── museum_store.py     # Shared cloud Redis REST + local JSON store & API router
 ├── server.py           # Zero-dependency local HTTP + API dev server (ports 3000 / 8080)
 ├── vercel.json         # Clean URL rewrites & serverless file includes
+├── publish.ps1         # Optional PowerShell helper for GitHub push & Vercel deploy
 ├── README.md
 └── .gitignore
 ```
@@ -80,10 +80,11 @@ Local rooms created during development are stored in `data/museums.json` (git-ig
 | `FLUTTERWAVE_PUBLIC_KEY` / `FLUTTERWAVE_SECRET_KEY` | Live Flutterwave verification for Heirloom Unlock | Optional |
 | `MOR_CHECKOUT_URL` | External Merchant of Record checkout link (e.g. Lemon Squeezy / Polar) for international couples | Optional |
 
-### Deploy Steps
+### Deploying to Vercel
 1. Push this repository to GitHub:
    ```powershell
    git remote add origin https://github.com/<YOUR_USERNAME>/our-love-museum.git
    git push -u origin main
    ```
-2. Import the repository in **Vercel**, connect **Upstash Redis** from the Vercel Marketplace (which provisions the Redis REST environment variables automatically), and deploy.
+2. Import the repository in **Vercel**, connect **Upstash Redis** from the Vercel Marketplace, and add any optional payment environment variables in **Project Settings → Environment Variables**.
+3. Deploy to production.
