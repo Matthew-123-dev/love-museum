@@ -12,7 +12,6 @@
   "use strict";
 
   const PUBLIC_ROOMS_STORAGE_KEY = "love_museum_public_rooms_v1";
-  const PRIVATE_STORAGE_KEY = "love_museum_founders_v2";
   const DEFAULT_CAMEO_URL = "images/love1.jpg";
   const DEFAULT_PROPOSAL_PROMPT =
     "Will you accept Our Love Museum and open every memory inside?";
@@ -33,10 +32,6 @@
   ];
 
   const EDITION_PRESETS = {
-    private: {
-      partner1: { id: "Matthew", name: "Matthew", nickname: "Ballerina" },
-      partner2: { id: "Ijem", name: "Ijem", nickname: "\u1eb8nit\u1ecdk\u00e0nmif\u1eb9\u0301" },
-    },
     public: {
       partner1: { id: "Him", name: "Him", nickname: "" },
       partner2: { id: "Her", name: "Her", nickname: "" },
@@ -105,7 +100,7 @@
 
   function formatPinDisplay(pin) {
     const clean = normalizePin(pin);
-    if (!clean || clean === "FOUNDERS" || clean === "SAMPLE") return clean;
+    if (!clean || clean === "SAMPLE") return clean;
     if (clean.length === 6) return `${clean.slice(0, 3)}-${clean.slice(3)}`;
     return clean;
   }
@@ -124,7 +119,6 @@
   }
 
   function getMuseumUrl() {
-    if (state.pin === "FOUNDERS") return "index.html?edition=private";
     if (!state.pin || state.pin === "SAMPLE") return "index.html";
     return `index.html?pin=${encodeURIComponent(state.pin)}`;
   }
@@ -155,28 +149,6 @@
 
   function buildLocalFallbackRoom(pin) {
     const norm = normalizePin(pin);
-    if (norm === "FOUNDERS") {
-      try {
-        const raw = localStorage.getItem(PRIVATE_STORAGE_KEY);
-        const parsed = raw ? JSON.parse(raw) : null;
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          return parsed;
-        }
-      } catch (_) {
-        // Use preset below
-      }
-      return {
-        pin: "FOUNDERS",
-        displayPin: "FOUNDERS",
-        edition: "private",
-        isSample: false,
-        isHeirloom: true,
-        ...EDITION_PRESETS.private,
-        heroCameoUrl: DEFAULT_CAMEO_URL,
-        proposalPrompt: DEFAULT_PROPOSAL_PROMPT,
-      };
-    }
-
     const rooms = readLocalPublicRooms();
     if (norm && rooms[norm] && typeof rooms[norm] === "object") {
       return rooms[norm];
@@ -256,8 +228,7 @@
      PARTNER NAMES & SUBTLE NICKNAME REVEAL (.nickname-swap)
      ------------------------------------------------------------------------ */
   function extractPartnerPair(room) {
-    const isPrivate = room?.edition === "private" || state.pin === "FOUNDERS";
-    const defaults = isPrivate ? EDITION_PRESETS.private : EDITION_PRESETS.public;
+    const defaults = EDITION_PRESETS.public;
 
     const p1Name = String(
       room?.partner1?.name || room?.partner1Name || defaults.partner1.name
@@ -695,7 +666,7 @@
   function renderRoom(room) {
     state.room = room;
     state.pin = normalizePin(room.pin || state.pin) || "SAMPLE";
-    state.edition = room.edition === "private" || state.pin === "FOUNDERS" ? "private" : "public";
+    state.edition = "public";
 
     const museumUrl = getMuseumUrl();
     if (dom.brandLink) dom.brandLink.href = museumUrl;
@@ -706,7 +677,7 @@
       dom.navCta.textContent = "Open Museum";
     }
 
-    const isCustomPublic = state.pin !== "FOUNDERS" && state.pin !== "SAMPLE";
+    const isCustomPublic = state.pin !== "SAMPLE";
     if (dom.pinBadge && dom.pinCode) {
       dom.pinBadge.hidden = !isCustomPublic;
       dom.pinCode.textContent = formatPinDisplay(state.pin);
@@ -792,7 +763,6 @@
       if (
         localPass &&
         state.pin !== "SAMPLE" &&
-        state.pin !== "FOUNDERS" &&
         state.passcode !== localPass
       ) {
         if (dom.loadingEl) dom.loadingEl.hidden = true;
@@ -821,25 +791,9 @@
 
     const params = new URLSearchParams(window.location.search);
     const queryPin = normalizePin(params.get("pin"));
-    const queryEdition = (params.get("edition") || "").toLowerCase();
     const queryPasscode = String(params.get("passcode") || "").trim();
 
-    if (queryPin) {
-      state.pin = queryPin;
-    } else if (queryEdition === "private") {
-      state.pin = "FOUNDERS";
-    } else {
-      // Check server edition if no ?pin= was supplied
-      try {
-        const cfgRes = await fetch("/api/config", { cache: "no-store" });
-        if (cfgRes.ok) {
-          const cfg = await cfgRes.json();
-          state.pin = cfg?.edition === "private" ? "FOUNDERS" : "SAMPLE";
-        }
-      } catch (_) {
-        state.pin = "SAMPLE";
-      }
-    }
+    state.pin = queryPin || "SAMPLE";
 
     if (queryPasscode) {
       state.passcode = queryPasscode;

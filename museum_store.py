@@ -76,11 +76,6 @@ DEFAULT_FOYER_NOTES = [
 ]
 
 PARTNER_PRESETS = {
-    "private": {
-        "partner1": {"id": "Matthew", "name": "Matthew", "nickname": "Ballerina"},
-        "partner2": {"id": "Ijem", "name": "Ijem", "nickname": "\u1eb8nit\u1ecdk\u00e0nmif\u1eb9\u0301"},
-        "shared": "Both of Us",
-    },
     "public": {
         "partner1": {"id": "Him", "name": "Him", "nickname": ""},
         "partner2": {"id": "Her", "name": "Her", "nickname": ""},
@@ -277,9 +272,8 @@ BUILTIN_SEED_ARTIFACTS = [
 
 
 def get_configured_edition() -> str:
-    """Return active server edition ('private' or 'public')."""
-    raw = os.environ.get("MUSEUM_EDITION", "public").strip().lower()
-    return "private" if raw in ("private", "founders", "matthew-ijem") else "public"
+    """Return active server edition ('public')."""
+    return "public"
 
 
 def normalize_pin(pin: str | None) -> str:
@@ -291,9 +285,9 @@ def normalize_pin(pin: str | None) -> str:
 
 
 def format_pin_display(pin: str) -> str:
-    """Format a 6-char public PIN as XXX-XXX while keeping special keys intact."""
+    """Format a 6-char public PIN as XXX-XXX while keeping SAMPLE intact."""
     norm = normalize_pin(pin)
-    if norm in ("FOUNDERS", "SAMPLE", ""):
+    if norm in ("SAMPLE", ""):
         return norm
     if len(norm) == 6:
         return f"{norm[:3]}-{norm[3:]}"
@@ -312,26 +306,18 @@ def _load_seed_from_disk() -> list[dict[str, Any]]:
     return copy.deepcopy(BUILTIN_SEED_ARTIFACTS)
 
 
-def map_curator_for_edition(curator: str, edition: str) -> str:
-    """Map generic or legacy curator tags cleanly to Matthew/Ijem or Him/Her."""
+def map_curator_for_edition(curator: str, edition: str = "public") -> str:
+    """Map generic or legacy curator tags cleanly to Him/Her."""
     raw = (curator or "").strip()
-    if edition == "private":
-        if raw in ("Me", "Him", "Matthew"):
-            return "Matthew"
-        if raw in ("My Girlfriend", "Her", "Ijem"):
-            return "Ijem"
-        return "Both of Us" if raw == "Both of Us" else (raw or "Both of Us")
-
-    # Public edition
-    if raw in ("Me", "Matthew", "Him"):
+    if raw in ("Me", "Him"):
         return "Him"
-    if raw in ("My Girlfriend", "Ijem", "Her"):
+    if raw in ("My Girlfriend", "Her"):
         return "Her"
     return "Both of Us" if raw == "Both of Us" else (raw or "Both of Us")
 
 
 def _normalize_artifacts_for_edition(
-    artifacts: list[dict[str, Any]], edition: str
+    artifacts: list[dict[str, Any]], edition: str = "public"
 ) -> list[dict[str, Any]]:
     normalized: list[dict[str, Any]] = []
     for item in artifacts:
@@ -344,11 +330,7 @@ def _normalize_artifacts_for_edition(
 
 
 def _map_curator_for_room(curator: str, room: dict[str, Any]) -> str:
-    """Map curator tags consistently for Founders, Free Public, or Heirloom rooms."""
-    edition = room.get("edition", "public")
-    if edition == "private":
-        return map_curator_for_edition(curator, "private")
-
+    """Map curator tags consistently for Free Public or Heirloom rooms."""
     raw = (curator or "").strip()
     if room.get("isHeirloom"):
         p1_id = str((room.get("partner1") or {}).get("id") or "Him")
@@ -373,28 +355,6 @@ def _normalize_artifacts_for_room(
         cloned["curator"] = _map_curator_for_room(str(cloned.get("curator", "")), room)
         normalized.append(cloned)
     return normalized
-
-
-def build_founders_room() -> dict[str, Any]:
-    """Construct the private seeded museum for Matthew (Ballerina) & Ijem (Ẹnitọkànmifẹ́)."""
-    seed = _normalize_artifacts_for_edition(_load_seed_from_disk(), "private")
-    return {
-        "pin": "FOUNDERS",
-        "displayPin": "FOUNDERS",
-        "edition": "private",
-        "isSample": False,
-        "isHeirloom": True,
-        **copy.deepcopy(PARTNER_PRESETS["private"]),
-        "heroCameoUrl": "",
-        "viewerPasscode": "",
-        "proposalPrompt": DEFAULT_PROPOSAL_PROMPT,
-        "proposalAccepted": False,
-        "proposalRejections": 0,
-        "paymentProvider": "",
-        "paymentRef": "",
-        "foyerNotes": copy.deepcopy(DEFAULT_FOYER_NOTES),
-        "artifacts": seed,
-    }
 
 
 def build_sample_room() -> dict[str, Any]:
@@ -507,42 +467,22 @@ def _write_local_rooms(rooms: dict[str, dict[str, Any]]) -> None:
         )
 
 
-def _sync_founders_artifacts_disk(artifacts: list[dict[str, Any]]) -> None:
-    """Keep legacy data/artifacts.json aligned when Matthew & Ijem edit locally."""
-    if os.environ.get("VERCEL"):
-        return
-    try:
-        ARTIFACTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        tmp_path = ARTIFACTS_FILE.with_suffix(".json.tmp")
-        tmp_path.write_text(
-            json.dumps(artifacts, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-        os.replace(tmp_path, ARTIFACTS_FILE)
-    except OSError:
-        pass
-
-
 def _normalize_room_schema(room: dict[str, Any]) -> dict[str, Any]:
     """Ensure room dictionaries carry complete Heirloom/Proposal schema defaults."""
     norm = normalize_pin(room.get("pin")) or "SAMPLE"
     room["pin"] = norm
     room["displayPin"] = format_pin_display(norm)
 
-    if norm == "FOUNDERS":
-        room["edition"] = "private"
-        room["isSample"] = False
-        room["isHeirloom"] = True
-    elif norm == "SAMPLE":
+    if norm == "SAMPLE":
         room["edition"] = "public"
         room["isSample"] = True
         room["isHeirloom"] = False
     else:
-        room["edition"] = "private" if room.get("edition") == "private" else "public"
+        room["edition"] = "public"
         room["isSample"] = bool(room.get("isSample", False))
         room["isHeirloom"] = bool(room.get("isHeirloom", False))
 
-    preset = PARTNER_PRESETS["private" if room["edition"] == "private" else "public"]
+    preset = PARTNER_PRESETS["public"]
     for key in ("partner1", "partner2"):
         raw_partner = room.get(key)
         default_partner = copy.deepcopy(preset[key])
@@ -594,7 +534,7 @@ def sanitize_room_for_response(
     locked = bool(
         enforce_passcode
         and has_passcode
-        and pin not in ("SAMPLE", "FOUNDERS")
+        and pin != "SAMPLE"
         and (provided_passcode or "") != stored_passcode
     )
     if locked:
@@ -777,11 +717,6 @@ def get_room(pin: str | None) -> dict[str, Any] | None:
         if norm in rooms and isinstance(rooms[norm], dict):
             return _normalize_room_schema(copy.deepcopy(rooms[norm]))
 
-    if norm == "FOUNDERS":
-        room = build_founders_room()
-        save_room(room)
-        return room
-
     return None
 
 
@@ -810,9 +745,6 @@ def save_room(room: dict[str, Any]) -> dict[str, Any]:
         rooms[norm] = room
         _write_local_rooms(rooms)
 
-    if norm == "FOUNDERS" and isinstance(room.get("artifacts"), list):
-        _sync_founders_artifacts_disk(room["artifacts"])
-
     return room
 
 
@@ -820,7 +752,7 @@ def generate_unique_pin() -> str:
     """Generate a unique 6-character PIN not colliding with existing rooms."""
     for _ in range(25):
         candidate = "".join(secrets.choice(PIN_ALPHABET) for _ in range(6))
-        if candidate in ("FOUNDERS", "SAMPLE"):
+        if candidate == "SAMPLE":
             continue
         if get_room(candidate) is None:
             return candidate
@@ -915,9 +847,7 @@ def create_public_museum(payload: dict[str, Any]) -> dict[str, Any]:
 def _resolve_room_pin_param(qs: dict[str, list[str]]) -> str:
     raw_pin = qs.get("pin", [""])[0]
     norm = normalize_pin(raw_pin)
-    if norm:
-        return norm
-    return "FOUNDERS" if get_configured_edition() == "private" else "SAMPLE"
+    return norm or "SAMPLE"
 
 
 def handle_api_request(
@@ -1080,7 +1010,7 @@ def handle_api_request(
             provided_passcode = (qs.get("passcode", [""])[0] or "").strip()
             if (
                 stored_passcode
-                and pin not in ("SAMPLE", "FOUNDERS")
+                and pin != "SAMPLE"
                 and provided_passcode != stored_passcode
             ):
                 return 403, {
@@ -1105,7 +1035,7 @@ def handle_api_request(
                 return 400, {"error": "Payload must be an artifact object or array."}
 
             if (
-                pin not in ("FOUNDERS", "SAMPLE")
+                pin != "SAMPLE"
                 and not room.get("isHeirloom")
                 and len(updated) > FREE_MEMORY_LIMIT
             ):

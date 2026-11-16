@@ -18,7 +18,6 @@ MAX_BODY_BYTES = 25 * 1024 * 1024  # 25 MB for local high-resolution uploads
 
 CLEAN_HTML_ROUTES = {
     "": "index.html",
-    "private": "index.html",
     "public": "index.html",
     "setup": "setup.html",
     "login": "setup.html",

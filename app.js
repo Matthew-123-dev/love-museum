@@ -1,11 +1,9 @@
 /* ==========================================================================
    THE MUSEUM OF US — Interactive Engine
    Handles:
-     - Dual Editions:
-         * Private Founders Edition (Matthew / Ballerina & Ijem / Ẹnitọkànmifẹ́)
-         * Public Edition (Sample Exhibition "Him & Her" + PIN-scoped Cloud Rooms)
+     - Sample Exhibition ("Him & Her") + PIN-scoped Cloud Couple Rooms
+     - Heirloom Unlock Tier (Custom Names, Subtle Nicknames, Cameo, Passcode, Payment)
      - Architecture B Cloud Sync (/api/config, /api/museums, /api/artifacts + local fallback)
-     - Subtle Desktop-Hover & Mobile-Tap/Whisper Nickname Reveal (Private Edition)
      - Canva Scalloped Oval Eyelet Lace SVG generation
      - Dynamic Wavy String Geometry through Slanted Card Top Holes
      - Scroll-velocity pendulum sway & IntersectionObserver .is-onscreen reveals
@@ -15,9 +13,7 @@
 (() => {
   "use strict";
 
-  const PRIVATE_STORAGE_KEY = "love_museum_founders_v2";
   const PUBLIC_ROOMS_STORAGE_KEY = "love_museum_public_rooms_v1";
-  const LEGACY_STORAGE_KEY = "love_museum_artifacts_v1";
 
   const DEFAULT_LETTER_FALLBACK =
     "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 450'%3E%3Crect width='600' height='450' fill='%23920d25'/%3E%3Crect x='95' y='85' width='410' height='280' rx='16' fill='%23f9eede' stroke='%23ffffff' stroke-width='4'/%3E%3Cpath d='M95 85 L300 245 L505 85' fill='%23f4dfc9' stroke='%23920d25' stroke-opacity='0.22' stroke-width='2'/%3E%3Ccircle cx='300' cy='240' r='34' fill='%23920d25'/%3E%3Cpath d='M290 235 C290 227 300 229 300 237 C300 229 310 227 310 235 C310 246 300 253 300 253 C300 253 290 246 290 235 Z' fill='%23ffffff'/%3E%3C/svg%3E";
@@ -48,11 +44,6 @@
   ];
 
   const EDITION_PRESETS = {
-    private: {
-      partner1: { id: "Matthew", name: "Matthew", nickname: "Ballerina" },
-      partner2: { id: "Ijem", name: "Ijem", nickname: "\u1eb8nit\u1ecdk\u00e0nmif\u1eb9\u0301" },
-      shared: "Both of Us",
-    },
     public: {
       partner1: { id: "Him", name: "Him", nickname: "" },
       partner2: { id: "Her", name: "Her", nickname: "" },
@@ -350,17 +341,17 @@
 
   function formatPinDisplay(pin) {
     const clean = normalizePin(pin);
-    if (!clean || clean === "FOUNDERS" || clean === "SAMPLE") return clean;
+    if (!clean || clean === "SAMPLE") return clean;
     if (clean.length === 6) return `${clean.slice(0, 3)}-${clean.slice(3)}`;
     return clean;
   }
 
   function hasCustomHeirloomIdentity() {
-    return state.edition === "private" || Boolean(state.room?.isHeirloom);
+    return Boolean(state.room?.isHeirloom);
   }
 
   function getActivePartners() {
-    const fallback = EDITION_PRESETS[state.edition] || EDITION_PRESETS.public;
+    const fallback = EDITION_PRESETS.public;
     const rawP1 = state.room?.partner1 || {};
     const rawP2 = state.room?.partner2 || {};
     const p1Name = String(rawP1.name || fallback.partner1.name || "Him").trim();
@@ -389,27 +380,17 @@
     const raw = String(curator || "").trim();
     const { partner1: p1, partner2: p2 } = getActivePartners();
 
-    if (state.edition === "private") {
-      if (raw === "Me" || raw === "Him" || raw === "Matthew" || raw === p1.id || raw === p1.name) {
-        return p1.id;
-      }
-      if (raw === "My Girlfriend" || raw === "Her" || raw === "Ijem" || raw === p2.id || raw === p2.name) {
-        return p2.id;
-      }
-      return raw || "Both of Us";
-    }
-
     if (state.room?.isHeirloom) {
       if (raw === p1.id || raw === p1.name) return p1.id;
       if (raw === p2.id || raw === p2.name) return p2.id;
       if (raw === "Both of Us" || !raw) return "Both of Us";
-      if (raw === "Me" || raw === "Him" || raw === "Matthew") return p1.id;
-      if (raw === "My Girlfriend" || raw === "Her" || raw === "Ijem") return p2.id;
+      if (raw === "Me" || raw === "Him") return p1.id;
+      if (raw === "My Girlfriend" || raw === "Her") return p2.id;
       return raw;
     }
 
-    if (raw === "Me" || raw === "Matthew" || raw === "Him") return "Him";
-    if (raw === "My Girlfriend" || raw === "Ijem" || raw === "Her") return "Her";
+    if (raw === "Me" || raw === "Him") return "Him";
+    if (raw === "My Girlfriend" || raw === "Her") return "Her";
     return raw || "Both of Us";
   }
 
@@ -881,24 +862,13 @@
 
   async function resolveEditionAndLoadRoom() {
     const params = new URLSearchParams(window.location.search);
-    const pathLower = window.location.pathname.toLowerCase();
-    const queryEdition = (params.get("edition") || "").toLowerCase();
     const queryPin = normalizePin(params.get("pin"));
 
-    const serverEdition = await refreshServerConfig();
+    await refreshServerConfig();
+    state.edition = "public";
+    state.pin = queryPin || "SAMPLE";
 
-    if (pathLower.startsWith("/private") || queryEdition === "private") {
-      state.edition = "private";
-      state.pin = "FOUNDERS";
-    } else if (pathLower.startsWith("/public") || queryEdition === "public" || queryPin) {
-      state.edition = "public";
-      state.pin = queryPin || "SAMPLE";
-    } else {
-      state.edition = serverEdition;
-      state.pin = serverEdition === "private" ? "FOUNDERS" : "SAMPLE";
-    }
-
-    // Load seed defaults for "Restore Sample Exhibition"
+    // Load seed defaults for sample exhibition
     try {
       const seedRes = await fetch("data/artifacts.json", { cache: "no-store" });
       if (seedRes.ok) {
@@ -920,7 +890,7 @@
       const roomRes = await fetchMuseumRoom(state.pin, state.passcode);
       if (roomRes.ok) {
         loadedRoom = await roomRes.json();
-      } else if (roomRes.status === 404 && state.edition === "public" && queryPin) {
+      } else if (roomRes.status === 404 && queryPin) {
         // Check local browser fallback first before reporting not found
         const localRoom = sanitizeLocalOfflineRoom(readLocalPublicRooms()[queryPin], state.passcode);
         if (localRoom) {
@@ -934,7 +904,7 @@
       // Static/offline fallback below
     }
 
-    if (!loadedRoom && state.edition === "public" && state.pin !== "SAMPLE") {
+    if (!loadedRoom && state.pin !== "SAMPLE") {
       const localRoom = sanitizeLocalOfflineRoom(readLocalPublicRooms()[state.pin], state.passcode);
       if (localRoom) {
         loadedRoom = localRoom;
@@ -950,37 +920,19 @@
       state.room = {
         pin: state.pin,
         displayPin: formatPinDisplay(state.pin),
-        edition: state.edition,
-        isSample: state.edition === "public",
-        isHeirloom: state.edition === "private",
+        edition: "public",
+        isSample: true,
+        isHeirloom: false,
         heroCameoUrl: "",
         hasPasscode: false,
         passcodeRequired: false,
         proposalPrompt:
           "Will you accept Our Love Museum and step inside every memory we have kept?",
         proposalAccepted: false,
-        ...structuredClone(EDITION_PRESETS[state.edition]),
+        ...structuredClone(EDITION_PRESETS.public),
         foyerNotes: structuredClone(DEFAULT_FOYER_NOTES),
       };
-
-      // Check localStorage offline cache for private edition
-      let localList = null;
-      if (state.edition === "private") {
-        try {
-          const raw =
-            localStorage.getItem(PRIVATE_STORAGE_KEY) ||
-            localStorage.getItem(LEGACY_STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              localList = parsed;
-            }
-          }
-        } catch (_) {
-          // Ignore
-        }
-      }
-      state.artifacts = normalizeArtifactsForEdition(localList || structuredClone(state.defaults));
+      state.artifacts = normalizeArtifactsForEdition(structuredClone(state.defaults));
       syncLocalStorage();
     }
 
@@ -990,9 +942,7 @@
   function syncLocalStorage() {
     if (state.passcodeLocked) return;
     try {
-      if (state.edition === "private") {
-        localStorage.setItem(PRIVATE_STORAGE_KEY, JSON.stringify(state.artifacts));
-      } else if (!state.room.isSample && state.pin !== "SAMPLE") {
+      if (!state.room.isSample && state.pin !== "SAMPLE") {
         const existing = readLocalPublicRooms()[normalizePin(state.pin)] || {};
         saveLocalPublicRoom({
           ...existing,
