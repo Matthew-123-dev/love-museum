@@ -1,13 +1,11 @@
 /* ==========================================================================
-   THE MUSEUM OF US — Public Setup, PIN Login & Heirloom Checkout Engine (setup.js)
+   THE MUSEUM OF US — Public Setup & PIN Login Engine (setup.js)
    Handles:
      - Switching between Create New Museum & Login with Unique PIN
-     - Always-visible 4 Foyer Love Letter inputs + "Use Default Foyer Notes" helper
-     - Compulsory 3+ Memory Curation Queue with Canvas photo compression
+     - Always-visible 4 Foyer Love Letter inputs + "Use Default Foyer Notes" button
+     - Compulsory 3+ Memory Curation Queue (up to 8 on initial setup)
      - POST /api/museums PIN Generation + localStorage backup
-     - Heirloom Unlock Modal (Partner Names/Nicknames, Hero "O" Cameo <= 450KB,
-       Optional 4-Digit Passcode, Proposal Question & Paystack / Flutterwave / MOR Checkout)
-     - Success Screen with Unique PIN, Museum Link & Interactive Proposal Link
+     - Success Screen with Unique PIN & Shareable Partner Link
    ========================================================================== */
 
 (() => {
@@ -15,9 +13,8 @@
 
   const PUBLIC_ROOMS_STORAGE_KEY = "love_museum_public_rooms_v1";
   const MIN_REQUIRED_MEMORIES = 3;
-  const DEFAULT_FREE_MEMORY_LIMIT = 8;
+  const FREE_SETUP_MEMORY_LIMIT = 8;
   const MAX_MEMORY_DATA_URL_LEN = 520000;
-  const MAX_CAMEO_DATA_URL_LEN = 450000;
   const DEFAULT_PROPOSAL_PROMPT =
     "Will you accept Our Love Museum and step inside every memory we have kept?";
   const REST_SLANTS = [-3.6, 3.3, -2.8, 4.0, -3.9, 2.9, -3.1, 3.7];
@@ -72,29 +69,6 @@
     customNotes: DEFAULT_FOYER_NOTES.map((n) => ({ id: n.id, title: "", body: "" })),
     memories: [],
     pendingImageDataUrl: "",
-    freeMemoryLimit: DEFAULT_FREE_MEMORY_LIMIT,
-    paymentConfig: {
-      paystackPublicKey: "",
-      flutterwavePublicKey: "",
-      morCheckoutUrl: "",
-      heirloomPriceNgn: 5000,
-      heirloomPriceUsd: 7,
-    },
-    createdRoom: null,
-    pendingMorPin: "",
-    pendingMorConfig: null,
-    heirloomDraft: {
-      partner1Name: "",
-      partner1Nickname: "",
-      partner2Name: "",
-      partner2Nickname: "",
-      cameoDataUrl: "",
-      cameoUrl: "",
-      viewerPasscode: "",
-      email: "",
-      proposalPrompt: DEFAULT_PROPOSAL_PROMPT,
-      provider: "paystack",
-    },
   };
 
   const dom = {
@@ -106,7 +80,6 @@
 
     joinPinForm: document.getElementById("join-pin-form"),
     loginPinInput: document.getElementById("login-pin-input"),
-    joinSubmitBtn: document.getElementById("join-submit-btn"),
     joinStatusMsg: document.getElementById("join-status-msg"),
 
     fillDefaultNotesBtn: document.getElementById("fill-default-notes-btn"),
@@ -130,56 +103,16 @@
     secretInput: document.getElementById("setup-mem-secret"),
     featuredInput: document.getElementById("setup-mem-featured"),
     memStatus: document.getElementById("setup-mem-status"),
-    addMemoryBtn: document.getElementById("setup-add-memory-btn"),
     addedHeading: document.getElementById("added-memories-heading"),
     memoryList: document.getElementById("setup-memory-list"),
-
-    heirloomUpgradeCard: document.getElementById("heirloom-upgrade-card"),
-    setupUnlockHeirloomBtn: document.getElementById("setup-unlock-heirloom-btn"),
-    setupHeirloomBadge: document.getElementById("setup-heirloom-badge"),
     generateStatus: document.getElementById("setup-generate-status"),
     generateBtn: document.getElementById("setup-generate-pin-btn"),
 
-    successHeirloomStatus: document.getElementById("success-heirloom-status"),
     createdPinDisplay: document.getElementById("created-pin-display"),
     copyPinBtn: document.getElementById("copy-created-pin-btn"),
     createdLinkInput: document.getElementById("created-link-input"),
     copyLinkBtn: document.getElementById("copy-created-link-btn"),
-    successProposalBox: document.getElementById("success-proposal-box"),
-    createdProposalLinkInput: document.getElementById("created-proposal-link-input"),
-    copyProposalLinkBtn: document.getElementById("copy-proposal-link-btn"),
-    previewProposalBtn: document.getElementById("preview-proposal-btn"),
-    successUpgradeBox: document.getElementById("success-upgrade-box"),
-    successUnlockHeirloomBtn: document.getElementById("success-unlock-heirloom-btn"),
     enterCreatedBtn: document.getElementById("enter-created-museum-btn"),
-
-    // Heirloom Checkout Modal
-    heirloomModal: document.getElementById("heirloom-modal"),
-    closeHeirloomModal: document.getElementById("close-heirloom-modal"),
-    cancelHeirloomBtn: document.getElementById("cancel-heirloom-btn"),
-    heirloomPrereqNote: document.getElementById("heirloom-prereq-note"),
-    heirloomForm: document.getElementById("heirloom-form"),
-    heirloomP1Name: document.getElementById("heirloom-p1-name"),
-    heirloomP1Nick: document.getElementById("heirloom-p1-nick"),
-    heirloomP2Name: document.getElementById("heirloom-p2-name"),
-    heirloomP2Nick: document.getElementById("heirloom-p2-nick"),
-    heirloomCameoDropzone: document.getElementById("heirloom-cameo-dropzone"),
-    heirloomCameoFile: document.getElementById("heirloom-cameo-file"),
-    heirloomCameoPreviewImg: document.getElementById("heirloom-cameo-preview-img"),
-    heirloomCameoPlaceholder: document.getElementById("heirloom-cameo-placeholder"),
-    heirloomCameoUrl: document.getElementById("heirloom-cameo-url"),
-    heirloomCameoClearBtn: document.getElementById("heirloom-cameo-clear-btn"),
-    heirloomCameoStatus: document.getElementById("heirloom-cameo-status"),
-    heirloomPasscode: document.getElementById("heirloom-passcode"),
-    heirloomEmail: document.getElementById("heirloom-email"),
-    heirloomProposalPrompt: document.getElementById("heirloom-proposal-prompt"),
-    paymentRailGrid: document.getElementById("payment-rail-grid"),
-    heirloomModeNote: document.getElementById("heirloom-mode-note"),
-    morConfirmWrap: document.getElementById("mor-confirm-wrap"),
-    morRefInput: document.getElementById("mor-ref-input"),
-    morConfirmBtn: document.getElementById("mor-confirm-btn"),
-    heirloomStatusMsg: document.getElementById("heirloom-status-msg"),
-    heirloomCheckoutBtn: document.getElementById("heirloom-checkout-btn"),
   };
 
   function normalizePin(raw) {
@@ -245,37 +178,15 @@
     if (dom.panelSuccess) dom.panelSuccess.hidden = true;
   }
 
-  async function fetchServerConfig() {
-    try {
-      const res = await fetch("/api/config", { cache: "no-store" });
-      if (!res.ok) return null;
-      const cfg = await res.json();
-      if (typeof cfg?.freeMemoryLimit === "number" && cfg.freeMemoryLimit > 0) {
-        setupState.freeMemoryLimit = cfg.freeMemoryLimit;
-      }
-      const p = cfg?.payments || cfg || {};
-      setupState.paymentConfig = {
-        paystackPublicKey: String(p.paystackPublicKey || "").trim(),
-        flutterwavePublicKey: String(p.flutterwavePublicKey || "").trim(),
-        morCheckoutUrl: String(p.morCheckoutUrl || "").trim(),
-        heirloomPriceNgn: Number(p.heirloomPriceNgn || 5000),
-        heirloomPriceUsd: Number(p.heirloomPriceUsd || 7),
-      };
-      return cfg;
-    } catch (_) {
-      return null;
-    }
-  }
-
   /* ------------------------------------------------------------------------
-     STEP 1: ALWAYS-VISIBLE CUSTOM FOYER NOTES (4 ENVELOPES)
+     STEP 1: ALWAYS-VISIBLE FOYER NOTES & DEFAULT FILL
      ------------------------------------------------------------------------ */
   function renderFoyerNoteInputs() {
     if (!dom.customNotesGrid) return;
     dom.customNotesGrid.hidden = false;
     dom.customNotesGrid.innerHTML = setupState.customNotes
       .map((note, idx) => {
-        const ph = FOYER_NOTE_PLACEHOLDERS[idx] || FOYER_NOTE_PLACEHOLDERS[0];
+        const ph = FOYER_NOTE_PLACEHOLDERS[idx];
         return `
           <div class="custom-note-card">
             <span class="custom-note-card-label">Floating Envelope ${idx + 1}</span>
@@ -284,7 +195,6 @@
               <input
                 type="text"
                 class="field-input"
-                id="foyer-note-title-${idx + 1}"
                 data-note-idx="${idx}"
                 data-note-field="title"
                 maxlength="80"
@@ -293,11 +203,10 @@
               />
             </label>
             <label class="field-label">
-              <span>Love Letter Message</span>
+              <span>Love Note Inside</span>
               <textarea
                 class="field-input field-textarea"
-                id="foyer-note-body-${idx + 1}"
-                rows="2"
+                rows="3"
                 data-note-idx="${idx}"
                 data-note-field="body"
                 maxlength="280"
@@ -311,25 +220,26 @@
   }
 
   function fillDefaultFoyerNotes() {
-    setupState.customNotes = structuredClone(DEFAULT_FOYER_NOTES);
+    setupState.customNotes = DEFAULT_FOYER_NOTES.map((n) => ({
+      id: n.id,
+      title: n.title,
+      body: n.body,
+    }));
     renderFoyerNoteInputs();
   }
 
   function getResolvedFoyerNotes() {
-    return DEFAULT_FOYER_NOTES.map((def, idx) => {
-      const custom = setupState.customNotes[idx] || {};
-      return {
-        id: def.id,
-        title: String(custom.title || "").trim() || def.title,
-        body: String(custom.body || "").trim() || def.body,
-      };
-    });
+    return setupState.customNotes.map((n, idx) => ({
+      id: DEFAULT_FOYER_NOTES[idx].id,
+      title: (n.title || "").trim() || DEFAULT_FOYER_NOTES[idx].title,
+      body: (n.body || "").trim() || DEFAULT_FOYER_NOTES[idx].body,
+    }));
   }
 
   /* ------------------------------------------------------------------------
-     SHARED CANVAS IMAGE COMPRESSION HELPER
+     SHARED IMAGE COMPRESSION
      ------------------------------------------------------------------------ */
-  function compressImageFile(file, initialMaxDim, maxDataUrlLen, onStatus, onSuccess) {
+  function compressImageFile(file, maxDim, maxBytesLen, onStatus, onDone) {
     if (!file || !file.type.startsWith("image/")) {
       onStatus?.("Please choose an image file (JPG, PNG, WebP).");
       return;
@@ -337,46 +247,28 @@
     onStatus?.("Framing photograph...");
 
     const reader = new FileReader();
-    reader.onerror = () => onStatus?.("Could not read that image file.");
     reader.onload = () => {
       const img = new Image();
-      img.onerror = () => onStatus?.("Could not decode that image file.");
       img.onload = () => {
-        let maxDim = initialMaxDim;
-        const qualities = [0.82, 0.72, 0.62, 0.5, 0.38];
-        let compressed = "";
-
-        for (let pass = 0; pass < 4; pass += 1) {
-          let { width, height } = img;
-          if (width > maxDim || height > maxDim) {
-            const ratio = Math.min(maxDim / width, maxDim / height);
-            width = Math.max(1, Math.round(width * ratio));
-            height = Math.max(1, Math.round(height * ratio));
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-          ctx.drawImage(img, 0, 0, width, height);
-
-          for (const q of qualities) {
-            const candidate = canvas.toDataURL("image/jpeg", q);
-            compressed = candidate;
-            if (candidate.length <= maxDataUrlLen) {
-              onSuccess(candidate);
-              return;
-            }
-          }
-          maxDim = Math.round(maxDim * 0.72);
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
         }
-
-        if (compressed && compressed.length <= maxDataUrlLen) {
-          onSuccess(compressed);
-        } else {
-          onStatus?.("Image is still too large after compression. Try a smaller photo or URL.");
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, width, height);
+        let compressed = canvas.toDataURL("image/jpeg", 0.78);
+        if (compressed.length > maxBytesLen) {
+          compressed = canvas.toDataURL("image/jpeg", 0.6);
         }
+        onDone(compressed);
       };
+      img.onerror = () => onStatus?.("Could not decode that image file.");
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
@@ -419,8 +311,6 @@
     const count = setupState.memories.length;
     const pct = Math.min(100, Math.round((count / MIN_REQUIRED_MEMORIES) * 100));
     const ready = count >= MIN_REQUIRED_MEMORIES;
-    const freeLimit = setupState.freeMemoryLimit;
-    const overFreeLimit = count > freeLimit && !setupState.createdRoom?.isHeirloom;
 
     if (dom.progressText) {
       dom.progressText.innerHTML = ready
@@ -438,18 +328,11 @@
     }
     if (dom.generateStatus) {
       const remaining = Math.max(0, MIN_REQUIRED_MEMORIES - count);
-      if (!ready) {
-        dom.generateStatus.textContent = `Add ${remaining} more ${
-          remaining === 1 ? "memory" : "memories"
-        } above to unlock PIN generation.`;
-      } else if (overFreeLimit) {
-        dom.generateStatus.textContent = `You queued ${count} memories (Free tier holds up to ${freeLimit}). Click Unlock Heirloom Edition above to keep all ${count}, or remove ${
-          count - freeLimit
-        } for a Free PIN.`;
-      } else {
-        dom.generateStatus.textContent =
-          "Everything is ready. Unlock Heirloom Edition above or generate your Free Museum PIN!";
-      }
+      dom.generateStatus.textContent = ready
+        ? "Everything is ready. Click to generate your private Museum PIN and share link!"
+        : `Add ${remaining} more ${
+            remaining === 1 ? "memory" : "memories"
+          } above to unlock PIN generation.`;
     }
 
     if (!dom.memoryList) return;
@@ -476,6 +359,13 @@
 
   function handleAddMemory(event) {
     event.preventDefault();
+    if (setupState.memories.length >= FREE_SETUP_MEMORY_LIMIT) {
+      if (dom.memStatus) {
+        dom.memStatus.textContent = `You can queue up to ${FREE_SETUP_MEMORY_LIMIT} memories during setup. Generate your PIN now, then manage or upgrade inside your museum.`;
+      }
+      return;
+    }
+
     const title = dom.titleInput?.value.trim() || "";
     const date = dom.dateInput?.value.trim() || "";
     const story = dom.storyInput?.value.trim() || "";
@@ -522,10 +412,8 @@
         dom.memStatus.textContent = `Added "${title}" (${count}/${MIN_REQUIRED_MEMORIES}). Add ${
           MIN_REQUIRED_MEMORIES - count
         } more!`;
-      } else if (count > setupState.freeMemoryLimit) {
-        dom.memStatus.textContent = `Added "${title}" (${count} queued). Unlock Heirloom below for unlimited memories!`;
       } else {
-        dom.memStatus.textContent = `Added "${title}". Ready to generate your PIN or unlock Heirloom below!`;
+        dom.memStatus.textContent = `Added "${title}". Ready to generate your PIN below!`;
       }
     }
     renderMemoryQueue();
@@ -543,7 +431,18 @@
     return code;
   }
 
-  async function createMuseumRoom(artifactsSlice) {
+  async function handleGenerateMuseum() {
+    if (setupState.memories.length < MIN_REQUIRED_MEMORIES) {
+      if (dom.generateStatus) {
+        dom.generateStatus.textContent =
+          "At least 3 memories are compulsory before generating your PIN.";
+      }
+      return;
+    }
+
+    if (dom.generateBtn) dom.generateBtn.disabled = true;
+    if (dom.generateStatus) dom.generateStatus.textContent = "Generating your private museum...";
+
     const foyerNotes = getResolvedFoyerNotes();
     let createdRoom = null;
 
@@ -553,7 +452,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           foyerNotes,
-          artifacts: artifactsSlice,
+          artifacts: setupState.memories,
         }),
       });
       const contentType = res.headers.get("content-type") || "";
@@ -578,11 +477,13 @@
         hasPasscode: false,
         proposalPrompt: DEFAULT_PROPOSAL_PROMPT,
         foyerNotes,
-        artifacts: artifactsSlice,
+        artifacts: setupState.memories,
       };
     } catch (err) {
       if (err?.isApiError) {
-        throw err;
+        if (dom.generateStatus) dom.generateStatus.textContent = err.message;
+        if (dom.generateBtn) dom.generateBtn.disabled = false;
+        return;
       }
       const pin = generateLocalFallbackPin();
       createdRoom = {
@@ -597,55 +498,18 @@
         hasPasscode: false,
         proposalPrompt: DEFAULT_PROPOSAL_PROMPT,
         foyerNotes,
-        artifacts: artifactsSlice,
+        artifacts: setupState.memories,
       };
     }
 
-    setupState.createdRoom = createdRoom;
     saveLocalPublicRoom(createdRoom);
-    return createdRoom;
+    showSuccessScreen(createdRoom);
   }
 
-  async function handleGenerateMuseum() {
-    if (setupState.memories.length < MIN_REQUIRED_MEMORIES) {
-      if (dom.generateStatus) {
-        dom.generateStatus.textContent =
-          "At least 3 memories are compulsory before generating your PIN.";
-      }
-      return;
-    }
-
-    if (setupState.memories.length > setupState.freeMemoryLimit) {
-      if (dom.generateStatus) {
-        dom.generateStatus.textContent = `Free museums hold up to ${setupState.freeMemoryLimit} memories (you queued ${setupState.memories.length}). Unlock Heirloom Edition above for unlimited memories, or trim to ${setupState.freeMemoryLimit}.`;
-      }
-      dom.heirloomUpgradeCard?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
-    }
-
-    if (dom.generateBtn) dom.generateBtn.disabled = true;
-    if (dom.generateStatus) dom.generateStatus.textContent = "Generating your private museum...";
-
-    try {
-      const createdRoom = await createMuseumRoom(setupState.memories);
-      showSuccessScreen(createdRoom);
-    } catch (err) {
-      if (dom.generateStatus) dom.generateStatus.textContent = err.message;
-      if (dom.generateBtn) dom.generateBtn.disabled = false;
-    }
-  }
-
-  /* ------------------------------------------------------------------------
-     SUCCESS SCREEN RENDERING (Free vs Heirloom Unlocked)
-     ------------------------------------------------------------------------ */
   function showSuccessScreen(room) {
     const cleanPin = normalizePin(room.pin);
     const displayPin = formatPinDisplay(cleanPin);
     const museumLink = buildShareUrl("index.html", cleanPin);
-    const proposalLink = buildShareUrl("proposal.html", cleanPin);
-    const isHeirloom = Boolean(room.isHeirloom);
-
-    setupState.createdRoom = room;
 
     if (dom.panelCreate) dom.panelCreate.hidden = true;
     if (dom.panelJoin) dom.panelJoin.hidden = true;
@@ -657,442 +521,7 @@
       dom.enterCreatedBtn.href = `index.html?pin=${encodeURIComponent(cleanPin)}`;
     }
 
-    if (dom.successHeirloomStatus) {
-      dom.successHeirloomStatus.classList.toggle("is-heirloom", isHeirloom);
-      if (isHeirloom) {
-        const p1 = room.partner1?.name || "Partner 1";
-        const p2 = room.partner2?.name || "Partner 2";
-        const lockText = room.hasPasscode ? " \u2022 Passcode Locked" : "";
-        dom.successHeirloomStatus.textContent = `Heirloom Unlocked \u2022 ${p1} & ${p2}${lockText}`;
-      } else {
-        dom.successHeirloomStatus.textContent = "Free Museum Edition";
-      }
-    }
-
-    if (dom.successProposalBox) dom.successProposalBox.hidden = !isHeirloom;
-    if (dom.successUpgradeBox) dom.successUpgradeBox.hidden = isHeirloom;
-
-    if (isHeirloom) {
-      if (dom.createdProposalLinkInput) dom.createdProposalLinkInput.value = proposalLink;
-      if (dom.previewProposalBtn) {
-        dom.previewProposalBtn.href = `proposal.html?pin=${encodeURIComponent(cleanPin)}`;
-      }
-    }
-
     dom.panelSuccess?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  /* ------------------------------------------------------------------------
-     HEIRLOOM UNLOCK MODAL & MULTI-RAIL CHECKOUT
-     ------------------------------------------------------------------------ */
-  function setCameoPreview(src) {
-    if (!dom.heirloomCameoPreviewImg || !dom.heirloomCameoPlaceholder) return;
-    if (src) {
-      dom.heirloomCameoPreviewImg.src = src;
-      dom.heirloomCameoPreviewImg.hidden = false;
-      dom.heirloomCameoPlaceholder.hidden = true;
-      if (dom.heirloomCameoClearBtn) dom.heirloomCameoClearBtn.hidden = false;
-    } else {
-      dom.heirloomCameoPreviewImg.src = "";
-      dom.heirloomCameoPreviewImg.hidden = true;
-      dom.heirloomCameoPlaceholder.hidden = false;
-      if (dom.heirloomCameoClearBtn) dom.heirloomCameoClearBtn.hidden = true;
-    }
-  }
-
-  function syncDraftFromModalInputs() {
-    const selectedRail =
-      dom.heirloomForm?.querySelector('input[name="heirloom-rail"]:checked')?.value || "paystack";
-    setupState.heirloomDraft = {
-      partner1Name: dom.heirloomP1Name?.value.trim() || "",
-      partner1Nickname: dom.heirloomP1Nick?.value.trim() || "",
-      partner2Name: dom.heirloomP2Name?.value.trim() || "",
-      partner2Nickname: dom.heirloomP2Nick?.value.trim() || "",
-      cameoDataUrl: setupState.heirloomDraft.cameoDataUrl || "",
-      cameoUrl: dom.heirloomCameoUrl?.value.trim() || "",
-      viewerPasscode: dom.heirloomPasscode?.value.trim() || "",
-      email: dom.heirloomEmail?.value.trim() || "",
-      proposalPrompt: dom.heirloomProposalPrompt?.value.trim() || "",
-      provider: selectedRail,
-    };
-
-    dom.paymentRailGrid?.querySelectorAll(".payment-rail-card").forEach((card) => {
-      const radio = card.querySelector('input[type="radio"]');
-      card.classList.toggle("is-selected", Boolean(radio?.checked));
-    });
-    updateCheckoutModeNote(selectedRail);
-  }
-
-  function updateCheckoutModeNote(provider) {
-    if (!dom.heirloomModeNote) return;
-    const cfg = setupState.paymentConfig;
-    const isLive =
-      (provider === "paystack" && Boolean(cfg.paystackPublicKey)) ||
-      (provider === "flutterwave" && Boolean(cfg.flutterwavePublicKey)) ||
-      (provider === "mor" && Boolean(cfg.morCheckoutUrl));
-
-    dom.heirloomModeNote.textContent = isLive
-      ? "Live checkout gateway active for this provider."
-      : "Sandbox Demo Checkout mode active \u2014 instant test unlock with no live card charge.";
-  }
-
-  function updateHeirloomPrereqUI() {
-    const needsMemories =
-      !setupState.createdRoom && setupState.memories.length < MIN_REQUIRED_MEMORIES;
-    if (dom.heirloomPrereqNote) {
-      dom.heirloomPrereqNote.hidden = !needsMemories;
-      if (needsMemories) {
-        const remaining = MIN_REQUIRED_MEMORIES - setupState.memories.length;
-        dom.heirloomPrereqNote.textContent = `You currently have ${setupState.memories.length}/${MIN_REQUIRED_MEMORIES} compulsory memories in Step 2. Fill in your Heirloom preferences now (saved as a draft) and add ${remaining} more ${
-          remaining === 1 ? "memory" : "memories"
-        } before completing checkout.`;
-      }
-    }
-
-    if (dom.setupHeirloomBadge) {
-      const hasDraft = Boolean(
-        setupState.heirloomDraft.partner1Name ||
-          setupState.heirloomDraft.partner2Name ||
-          setupState.heirloomDraft.cameoDataUrl ||
-          setupState.heirloomDraft.cameoUrl ||
-          setupState.heirloomDraft.viewerPasscode
-      );
-      dom.setupHeirloomBadge.hidden = !hasDraft;
-      if (hasDraft) {
-        dom.setupHeirloomBadge.textContent =
-          "Heirloom details drafted \u2014 click above to complete checkout.";
-      }
-    }
-  }
-
-  async function openHeirloomModal() {
-    if (!dom.heirloomModal) return;
-    if (dom.heirloomStatusMsg) dom.heirloomStatusMsg.textContent = "";
-    if (dom.morConfirmWrap) dom.morConfirmWrap.hidden = true;
-    if (dom.heirloomCheckoutBtn) dom.heirloomCheckoutBtn.disabled = false;
-
-    const d = setupState.heirloomDraft;
-    if (dom.heirloomP1Name) dom.heirloomP1Name.value = d.partner1Name;
-    if (dom.heirloomP1Nick) dom.heirloomP1Nick.value = d.partner1Nickname;
-    if (dom.heirloomP2Name) dom.heirloomP2Name.value = d.partner2Name;
-    if (dom.heirloomP2Nick) dom.heirloomP2Nick.value = d.partner2Nickname;
-    if (dom.heirloomCameoUrl) dom.heirloomCameoUrl.value = d.cameoUrl;
-    if (dom.heirloomPasscode) dom.heirloomPasscode.value = d.viewerPasscode;
-    if (dom.heirloomEmail) dom.heirloomEmail.value = d.email;
-    if (dom.heirloomProposalPrompt) {
-      dom.heirloomProposalPrompt.value = d.proposalPrompt || DEFAULT_PROPOSAL_PROMPT;
-    }
-
-    setCameoPreview(d.cameoUrl || d.cameoDataUrl || "");
-
-    const activeRadio = dom.heirloomForm?.querySelector(
-      `input[name="heirloom-rail"][value="${d.provider || "paystack"}"]`
-    );
-    if (activeRadio) activeRadio.checked = true;
-
-    updateHeirloomPrereqUI();
-    syncDraftFromModalInputs();
-
-    dom.heirloomModal.hidden = false;
-    document.body.style.overflow = "hidden";
-
-    await fetchServerConfig();
-    updateCheckoutModeNote(setupState.heirloomDraft.provider);
-  }
-
-  function closeHeirloomModal() {
-    if (!dom.heirloomModal) return;
-    syncDraftFromModalInputs();
-    updateHeirloomPrereqUI();
-    dom.heirloomModal.hidden = true;
-    document.body.style.overflow = "";
-  }
-
-  function processCameoUpload(file) {
-    compressImageFile(
-      file,
-      720,
-      MAX_CAMEO_DATA_URL_LEN,
-      (msg) => {
-        if (dom.heirloomCameoStatus) dom.heirloomCameoStatus.textContent = msg;
-      },
-      (compressed) => {
-        const kb = Math.round(compressed.length / 1024);
-        setupState.heirloomDraft.cameoDataUrl = compressed;
-        if (dom.heirloomCameoUrl) dom.heirloomCameoUrl.value = "";
-        setCameoPreview(compressed);
-        if (dom.heirloomCameoStatus) {
-          dom.heirloomCameoStatus.textContent = `Portrait framed & compressed (${kb}KB \u2264 450KB).`;
-        }
-      }
-    );
-  }
-
-  function loadExternalScript(src) {
-    return new Promise((resolve, reject) => {
-      const existing = document.querySelector(`script[src="${src}"]`);
-      if (existing) {
-        if (existing.dataset.loaded === "1") {
-          resolve();
-          return;
-        }
-        existing.addEventListener("load", resolve, { once: true });
-        existing.addEventListener("error", reject, { once: true });
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = src;
-      script.async = true;
-      script.addEventListener("load", () => {
-        script.dataset.loaded = "1";
-        resolve();
-      });
-      script.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)));
-      document.head.appendChild(script);
-    });
-  }
-
-  async function finalizeHeirloomPayment(pin, provider, reference, heirloomConfig) {
-    if (dom.heirloomStatusMsg) {
-      dom.heirloomStatusMsg.textContent = "Unlocking Heirloom features for your museum...";
-    }
-
-    let unlockedRoom = null;
-
-    try {
-      const res = await fetch("/api/payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pin,
-          provider,
-          reference,
-          heirloomConfig,
-        }),
-      });
-      const contentType = res.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) {
-        throw new Error("OFFLINE_STATIC");
-      }
-      const json = await res.json();
-      if (!res.ok) {
-        const err = new Error(json?.error || "Payment verification failed.");
-        err.isApiError = true;
-        throw err;
-      }
-      unlockedRoom = json.museum || null;
-
-      // If the user queued > FREE_MEMORY_LIMIT memories before checkout, push the full queue now that Heirloom is active
-      if (
-        unlockedRoom &&
-        setupState.memories.length > setupState.freeMemoryLimit &&
-        (!Array.isArray(unlockedRoom.artifacts) ||
-          unlockedRoom.artifacts.length < setupState.memories.length)
-      ) {
-        const artRes = await fetch(`/api/artifacts?pin=${encodeURIComponent(pin)}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(setupState.memories),
-        });
-        if (artRes.ok) {
-          const artJson = await artRes.json();
-          if (Array.isArray(artJson?.artifacts)) {
-            unlockedRoom.artifacts = artJson.artifacts;
-          }
-        }
-      }
-    } catch (err) {
-      if (err?.isApiError) {
-        throw err;
-      }
-      // Static / offline fallback
-      const baseRoom = setupState.createdRoom || {
-        pin,
-        displayPin: formatPinDisplay(pin),
-        edition: "public",
-        isSample: false,
-        foyerNotes: getResolvedFoyerNotes(),
-        artifacts: setupState.memories,
-      };
-      unlockedRoom = {
-        ...baseRoom,
-        isHeirloom: true,
-        paymentProvider: provider,
-        paymentRef: reference,
-        partner1: {
-          id: heirloomConfig.partner1Name || "Him",
-          name: heirloomConfig.partner1Name || "Him",
-          nickname: heirloomConfig.partner1Nickname || "",
-        },
-        partner2: {
-          id: heirloomConfig.partner2Name || "Her",
-          name: heirloomConfig.partner2Name || "Her",
-          nickname: heirloomConfig.partner2Nickname || "",
-        },
-        heroCameoUrl: heirloomConfig.heroCameoUrl || "",
-        hasPasscode: Boolean(heirloomConfig.viewerPasscode),
-        proposalPrompt: heirloomConfig.proposalPrompt || DEFAULT_PROPOSAL_PROMPT,
-        artifacts:
-          setupState.memories.length > 0 ? setupState.memories : baseRoom.artifacts || [],
-      };
-    }
-
-    if (!unlockedRoom) {
-      throw new Error("Could not finalize Heirloom room.");
-    }
-
-    saveLocalPublicRoom(unlockedRoom);
-    setupState.createdRoom = unlockedRoom;
-    setupState.pendingMorPin = "";
-    setupState.pendingMorConfig = null;
-    closeHeirloomModal();
-    showSuccessScreen(unlockedRoom);
-  }
-
-  async function handleHeirloomCheckoutSubmit(event) {
-    event.preventDefault();
-    syncDraftFromModalInputs();
-    const d = setupState.heirloomDraft;
-
-    if (d.viewerPasscode && !/^\d{4}$/.test(d.viewerPasscode)) {
-      if (dom.heirloomStatusMsg) {
-        dom.heirloomStatusMsg.textContent =
-          "Viewer passcode must be exactly 4 digits (e.g. 1402), or leave blank for none.";
-      }
-      dom.heirloomPasscode?.focus();
-      return;
-    }
-
-    if (!setupState.createdRoom && setupState.memories.length < MIN_REQUIRED_MEMORIES) {
-      if (dom.heirloomStatusMsg) {
-        dom.heirloomStatusMsg.textContent = `Draft saved! Please add at least ${MIN_REQUIRED_MEMORIES} memories in Step 2 first so your Museum PIN can be generated.`;
-      }
-      return;
-    }
-
-    const heirloomConfig = {
-      partner1Name: d.partner1Name || "Him",
-      partner1Nickname: d.partner1Nickname,
-      partner2Name: d.partner2Name || "Her",
-      partner2Nickname: d.partner2Nickname,
-      heroCameoUrl: d.cameoUrl || d.cameoDataUrl || "",
-      viewerPasscode: d.viewerPasscode,
-      proposalPrompt: d.proposalPrompt || DEFAULT_PROPOSAL_PROMPT,
-    };
-
-    if (dom.heirloomCheckoutBtn) dom.heirloomCheckoutBtn.disabled = true;
-    if (dom.heirloomStatusMsg) dom.heirloomStatusMsg.textContent = "Checking payment gateway...";
-
-    try {
-      await fetchServerConfig();
-      const payments = setupState.paymentConfig;
-      updateCheckoutModeNote(d.provider);
-
-      // Ensure a room & PIN exist first
-      let targetRoom = setupState.createdRoom;
-      if (!targetRoom) {
-        const initialSlice = setupState.memories.slice(0, setupState.freeMemoryLimit);
-        targetRoom = await createMuseumRoom(initialSlice);
-      }
-      const targetPin = normalizePin(targetRoom.pin);
-      const email = d.email || "couple@museumofus.love";
-      const randSuffix = Math.random().toString(36).slice(2, 6).toUpperCase();
-
-      if (d.provider === "paystack" && payments.paystackPublicKey) {
-        await loadExternalScript("https://js.paystack.co/v1/inline.js");
-        if (!window.PaystackPop) {
-          throw new Error("Paystack checkout could not initialize.");
-        }
-        const ref = `PSK-${targetPin}-${Date.now()}`;
-        const handler = window.PaystackPop.setup({
-          key: payments.paystackPublicKey,
-          email,
-          amount: Math.round((payments.heirloomPriceNgn || 5000) * 100),
-          currency: "NGN",
-          ref,
-          metadata: { pin: targetPin },
-          callback: (resp) => {
-            finalizeHeirloomPayment(targetPin, "paystack", resp?.reference || ref, heirloomConfig).catch(
-              (err) => {
-                if (dom.heirloomStatusMsg) dom.heirloomStatusMsg.textContent = err.message;
-                if (dom.heirloomCheckoutBtn) dom.heirloomCheckoutBtn.disabled = false;
-              }
-            );
-          },
-          onClose: () => {
-            if (dom.heirloomStatusMsg) dom.heirloomStatusMsg.textContent = "Checkout window closed.";
-            if (dom.heirloomCheckoutBtn) dom.heirloomCheckoutBtn.disabled = false;
-          },
-        });
-        handler.openIframe();
-        return;
-      }
-
-      if (d.provider === "flutterwave" && payments.flutterwavePublicKey) {
-        await loadExternalScript("https://checkout.flutterwave.com/v3.js");
-        if (typeof window.FlutterwaveCheckout !== "function") {
-          throw new Error("Flutterwave checkout could not initialize.");
-        }
-        const txRef = `FLW-${targetPin}-${Date.now()}`;
-        window.FlutterwaveCheckout({
-          public_key: payments.flutterwavePublicKey,
-          tx_ref: txRef,
-          amount: payments.heirloomPriceNgn || 5000,
-          currency: "NGN",
-          customer: {
-            email,
-            name: `${heirloomConfig.partner1Name} & ${heirloomConfig.partner2Name}`,
-          },
-          customizations: {
-            title: "The Museum of Us",
-            description: `Heirloom Unlock for PIN ${formatPinDisplay(targetPin)}`,
-          },
-          callback: (data) => {
-            finalizeHeirloomPayment(
-              targetPin,
-              "flutterwave",
-              data?.tx_ref || txRef,
-              heirloomConfig
-            ).catch((err) => {
-              if (dom.heirloomStatusMsg) dom.heirloomStatusMsg.textContent = err.message;
-              if (dom.heirloomCheckoutBtn) dom.heirloomCheckoutBtn.disabled = false;
-            });
-          },
-          onclose: () => {
-            if (dom.heirloomStatusMsg) dom.heirloomStatusMsg.textContent = "Checkout window closed.";
-            if (dom.heirloomCheckoutBtn) dom.heirloomCheckoutBtn.disabled = false;
-          },
-        });
-        return;
-      }
-
-      if (d.provider === "mor" && payments.morCheckoutUrl) {
-        const checkoutUrl = new URL(payments.morCheckoutUrl, window.location.href);
-        checkoutUrl.searchParams.set("checkout[custom][pin]", targetPin);
-        window.open(checkoutUrl.toString(), "_blank", "noopener");
-        setupState.pendingMorPin = targetPin;
-        setupState.pendingMorConfig = heirloomConfig;
-        if (dom.morConfirmWrap) dom.morConfirmWrap.hidden = false;
-        if (dom.morRefInput && !dom.morRefInput.value) {
-          dom.morRefInput.value = `MOR-${targetPin}-${randSuffix}`;
-        }
-        if (dom.heirloomStatusMsg) {
-          dom.heirloomStatusMsg.textContent =
-            "Complete checkout in the opened global window, then confirm your reference below.";
-        }
-        if (dom.heirloomCheckoutBtn) dom.heirloomCheckoutBtn.disabled = false;
-        return;
-      }
-
-      // Sandbox Demo Checkout mode (no live keys configured)
-      const demoRef = `DEMO-${d.provider.toUpperCase()}-${Date.now()}-${randSuffix}`;
-      await finalizeHeirloomPayment(targetPin, d.provider, demoRef, heirloomConfig);
-    } catch (err) {
-      if (dom.heirloomStatusMsg) {
-        dom.heirloomStatusMsg.textContent = err?.message || "Could not complete checkout.";
-      }
-      if (dom.heirloomCheckoutBtn) dom.heirloomCheckoutBtn.disabled = false;
-    }
   }
 
   /* ------------------------------------------------------------------------
@@ -1148,9 +577,6 @@
     }
   }
 
-  /* ------------------------------------------------------------------------
-     INIT & EVENT WIRING
-     ------------------------------------------------------------------------ */
   function wireListeners() {
     dom.tabCreate?.addEventListener("click", () => switchTab("create"));
     dom.tabJoin?.addEventListener("click", () => switchTab("join"));
@@ -1207,10 +633,6 @@
 
     dom.generateBtn?.addEventListener("click", handleGenerateMuseum);
 
-    // Step 3 & Success Screen Heirloom Triggers
-    dom.setupUnlockHeirloomBtn?.addEventListener("click", openHeirloomModal);
-    dom.successUnlockHeirloomBtn?.addEventListener("click", openHeirloomModal);
-
     // Success Screen Copy Buttons
     dom.copyPinBtn?.addEventListener("click", () => {
       copyTextWithFeedback(
@@ -1229,82 +651,6 @@
         "Copy this shareable partner link:"
       );
     });
-
-    dom.copyProposalLinkBtn?.addEventListener("click", () => {
-      copyTextWithFeedback(
-        dom.createdProposalLinkInput?.value || "",
-        dom.copyProposalLinkBtn,
-        "Copy Proposal Link",
-        "Copy this Interactive Proposal Link:"
-      );
-    });
-
-    // Heirloom Modal Controls
-    dom.closeHeirloomModal?.addEventListener("click", closeHeirloomModal);
-    dom.cancelHeirloomBtn?.addEventListener("click", closeHeirloomModal);
-    dom.heirloomModal?.addEventListener("click", (e) => {
-      if (e.target === dom.heirloomModal) closeHeirloomModal();
-    });
-
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && dom.heirloomModal && !dom.heirloomModal.hidden) {
-        closeHeirloomModal();
-      }
-    });
-
-    dom.heirloomCameoFile?.addEventListener("change", (e) => {
-      const file = e.target.files?.[0];
-      if (file) processCameoUpload(file);
-    });
-
-    dom.heirloomCameoDropzone?.addEventListener("dragover", (e) => {
-      e.preventDefault();
-    });
-
-    dom.heirloomCameoDropzone?.addEventListener("drop", (e) => {
-      e.preventDefault();
-      const file = e.dataTransfer?.files?.[0];
-      if (file) processCameoUpload(file);
-    });
-
-    dom.heirloomCameoUrl?.addEventListener("input", () => {
-      const val = dom.heirloomCameoUrl.value.trim();
-      setCameoPreview(val || setupState.heirloomDraft.cameoDataUrl || "");
-      syncDraftFromModalInputs();
-    });
-
-    dom.heirloomCameoClearBtn?.addEventListener("click", () => {
-      setupState.heirloomDraft.cameoDataUrl = "";
-      if (dom.heirloomCameoUrl) dom.heirloomCameoUrl.value = "";
-      if (dom.heirloomCameoFile) dom.heirloomCameoFile.value = "";
-      setCameoPreview("");
-      if (dom.heirloomCameoStatus) {
-        dom.heirloomCameoStatus.textContent =
-          'Auto-compressed to \u2264 450KB to frame inside the "L O V E" oval window.';
-      }
-      syncDraftFromModalInputs();
-    });
-
-    dom.heirloomForm?.addEventListener("input", syncDraftFromModalInputs);
-    dom.heirloomForm?.addEventListener("change", syncDraftFromModalInputs);
-    dom.heirloomForm?.addEventListener("submit", handleHeirloomCheckoutSubmit);
-
-    dom.morConfirmBtn?.addEventListener("click", async () => {
-      if (!setupState.pendingMorPin || !setupState.pendingMorConfig) return;
-      const ref = dom.morRefInput?.value.trim() || `MOR-${setupState.pendingMorPin}-${Date.now()}`;
-      dom.morConfirmBtn.disabled = true;
-      try {
-        await finalizeHeirloomPayment(
-          setupState.pendingMorPin,
-          "mor",
-          ref,
-          setupState.pendingMorConfig
-        );
-      } catch (err) {
-        if (dom.heirloomStatusMsg) dom.heirloomStatusMsg.textContent = err.message;
-        dom.morConfirmBtn.disabled = false;
-      }
-    });
   }
 
   function init() {
@@ -1319,7 +665,6 @@
     wireListeners();
     renderFoyerNoteInputs();
     renderMemoryQueue();
-    fetchServerConfig();
 
     const params = new URLSearchParams(window.location.search);
     const shouldJoin =

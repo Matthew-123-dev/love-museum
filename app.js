@@ -220,12 +220,6 @@
     foyerExploreBtn: document.getElementById("foyer-explore-btn"),
     openCurateHero: document.getElementById("open-curate-hero"),
     vaultCreateBtn: document.getElementById("vault-create-btn"),
-    vaultHeirloomBanner: document.getElementById("vault-heirloom-banner"),
-    vaultHeirloomTitle: document.getElementById("vault-heirloom-title"),
-    vaultHeirloomDesc: document.getElementById("vault-heirloom-desc"),
-    vaultUnlockHeirloomBtn: document.getElementById("vault-unlock-heirloom-btn"),
-    vaultPreviewProposalLink: document.getElementById("vault-preview-proposal-link"),
-    vaultEditHeirloomBtn: document.getElementById("vault-edit-heirloom-btn"),
     footerBrandMeta: document.getElementById("footer-brand-meta"),
     filterCurator1: document.getElementById("filter-curator-1"),
     filterCurator2: document.getElementById("filter-curator-2"),
@@ -505,7 +499,10 @@
       }
     }
     if (dom.openHeirloomBtn) {
-      dom.openHeirloomBtn.hidden = !(isPublicCustom && !state.room.isHeirloom);
+      dom.openHeirloomBtn.hidden = !isPublicCustom;
+      dom.openHeirloomBtn.textContent = state.room.isHeirloom
+        ? "Heirloom Settings"
+        : "Unlock Heirloom";
     }
     if (dom.copyProposalLinkBtn) {
       dom.copyProposalLinkBtn.hidden = !(isPublicCustom && state.room.isHeirloom);
@@ -539,43 +536,6 @@
     }
     if (dom.openCurateHero) dom.openCurateHero.hidden = isPublicSample;
     if (dom.vaultCreateBtn) dom.vaultCreateBtn.hidden = !isPublicSample;
-
-    // Vault Heirloom Banner
-    if (dom.vaultHeirloomBanner) {
-      dom.vaultHeirloomBanner.hidden = !isPublicCustom;
-      if (isPublicCustom) {
-        const ngn = Number(state.paymentsConfig.heirloomPriceNgn || 5000).toLocaleString("en-NG");
-        const usd = Number(state.paymentsConfig.heirloomPriceUsd || 7);
-        if (state.room.isHeirloom) {
-          if (dom.vaultHeirloomTitle) {
-            dom.vaultHeirloomTitle.textContent = state.room.proposalAccepted
-              ? "Heirloom Edition Unlocked \u2022 Proposal Accepted"
-              : "Heirloom Edition Unlocked";
-          }
-          if (dom.vaultHeirloomDesc) {
-            dom.vaultHeirloomDesc.textContent =
-              "Custom partner names & nicknames, Hero cameo portrait, unlimited memories, and your interactive Proposal Link are active.";
-          }
-          if (dom.vaultUnlockHeirloomBtn) dom.vaultUnlockHeirloomBtn.hidden = true;
-          if (dom.vaultPreviewProposalLink) {
-            dom.vaultPreviewProposalLink.hidden = false;
-            dom.vaultPreviewProposalLink.href = getProposalUrl();
-          }
-          if (dom.vaultEditHeirloomBtn) dom.vaultEditHeirloomBtn.hidden = false;
-        } else {
-          if (dom.vaultHeirloomTitle) {
-            dom.vaultHeirloomTitle.textContent = `Free Museum Tier (Up to ${state.freeMemoryLimit} Memories)`;
-          }
-          if (dom.vaultHeirloomDesc) {
-            dom.vaultHeirloomDesc.textContent =
-              `Unlock Heirloom once (\u20a6${ngn} / $${usd}) for custom names & nicknames, Hero "O" portrait, unlimited memories, optional passcode lock, and your dodging-No Proposal Link.`;
-          }
-          if (dom.vaultUnlockHeirloomBtn) dom.vaultUnlockHeirloomBtn.hidden = false;
-          if (dom.vaultPreviewProposalLink) dom.vaultPreviewProposalLink.hidden = true;
-          if (dom.vaultEditHeirloomBtn) dom.vaultEditHeirloomBtn.hidden = true;
-        }
-      }
-    }
 
     // Gallery Curator Filter Chips
     if (dom.filterCurator1) {
@@ -1392,6 +1352,19 @@
   }
 
   function openCurateModal(artifactId = null) {
+    if (
+      !artifactId &&
+      state.edition === "public" &&
+      !state.room.isSample &&
+      !state.room.isHeirloom &&
+      state.artifacts.length >= state.freeMemoryLimit
+    ) {
+      openHeirloomModal({
+        limitNotice: `You have reached the ${state.freeMemoryLimit}-memory limit on the free museum. Unlock Heirloom once to hang unlimited memories, customize your names & nicknames, and get your interactive Proposal Link.`,
+      });
+      return;
+    }
+
     if (!dom.curateModal || !dom.artifactForm) return;
     setFormStatus("");
     dom.artifactForm.reset();
@@ -2346,8 +2319,6 @@
 
     // Heirloom Upgrade, Edit & Proposal Link Controls
     dom.openHeirloomBtn?.addEventListener("click", () => openHeirloomModal());
-    dom.vaultUnlockHeirloomBtn?.addEventListener("click", () => openHeirloomModal());
-    dom.vaultEditHeirloomBtn?.addEventListener("click", () => openHeirloomModal());
 
     dom.copyProposalLinkBtn?.addEventListener("click", async () => {
       const proposalUrl = getProposalUrl();
