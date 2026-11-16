@@ -1,0 +1,24 @@
+# Python bytecode and cache directories
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Vercel local CLI state
+.vercel/
+
+# Local environment & secret files (never commit keys)
+.env
+.env.local
+.env*.local
+.env.production
+.env.development
+
+# Local package dependencies
+node_modules/
+
+# Local runtime couple rooms database
+data/museums.json
+
+# OS & editor clutter
+.DS_Store
+Thumbs.db

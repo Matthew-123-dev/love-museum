@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Museum of Us — An Archive for Two</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Great+Vibes&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Shared SVG Filters & Reusable Definitions -->
+  <svg class="svg-defs" aria-hidden="true" focusable="false">
+    <defs>
+      <!-- Vintage Mottled Texture Filter inspired by Canva reference -->
+      <filter id="vintage-mottle" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.65"
+          numOctaves="4"
+          seed="17"
+          result="noise"
+        />
+        <feColorMatrix
+          type="matrix"
+          values="
+            1 0 0 0 0
+            0 1 0 0 0
+            0 0 1 0 0
+            0 0 0 0.14 0"
+          in="noise"
+          result="softNoise"
+        />
+        <feComposite in="softNoise" in2="SourceGraphic" operator="atop" />
+      </filter>
+
+      <!-- Paper / Velvet Speckle Pattern -->
+      <pattern id="mottle-speckles" width="160" height="160" patternUnits="userSpaceOnUse">
+        <circle cx="18" cy="24" r="1.4" fill="#ffffff" fill-opacity="0.09" />
+        <circle cx="64" cy="14" r="0.9" fill="#f9eede" fill-opacity="0.11" />
+        <circle cx="112" cy="42" r="1.8" fill="#ffffff" fill-opacity="0.06" />
+        <circle cx="145" cy="19" r="1.1" fill="#f4dfc9" fill-opacity="0.09" />
+        <circle cx="38" cy="78" r="1.6" fill="#4a0512" fill-opacity="0.22" />
+        <circle cx="92" cy="88" r="1.2" fill="#ffffff" fill-opacity="0.08" />
+        <circle cx="132" cy="108" r="2.1" fill="#4a0512" fill-opacity="0.16" />
+        <circle cx="24" cy="136" r="1.3" fill="#f9eede" fill-opacity="0.1" />
+        <circle cx="76" cy="146" r="1.5" fill="#ffffff" fill-opacity="0.07" />
+        <circle cx="148" cy="142" r="1.0" fill="#f4dfc9" fill-opacity="0.1" />
+      </pattern>
+    </defs>
+  </svg>
+
+  <!-- Sticky Top Navigation -->
+  <header class="museum-nav" id="top-nav">
+    <div class="nav-inner">
+      <a href="#foyer" class="brand-mark" aria-label="The Museum of Us Home">
+        <span class="wax-seal-mini" aria-hidden="true">
+          <svg viewBox="0 0 36 36" width="32" height="32">
+            <path
+              d="M18 2 C21 2 23 4.2 25.8 3.6 C28.5 3 30.2 5.8 32 7.8 C34 9.9 33 13 34.4 15.6 C35.8 18.2 33.8 20.8 33.8 23.8 C33.8 26.8 31 28.4 29 30.5 C27 32.6 24 32 21.5 33.6 C19 35.1 16 33.4 13.3 33.6 C10.6 33.8 8.8 31 6.4 29.5 C4 28 4.4 24.8 2.8 22.3 C1.2 19.8 3 17 2.4 14.2 C1.8 11.4 4.5 9.6 6.2 7.2 C7.8 4.8 11 5.2 13.5 3.6 C15.4 2.4 16.5 2 18 2 Z"
+              fill="#f9eede"
+            />
+            <circle cx="18" cy="18" r="10.5" fill="none" stroke="#920d25" stroke-width="1.3" stroke-opacity="0.45" />
+            <path
+              d="M18 23.5 C18 23.5 12.2 19.8 12.2 15.8 C12.2 13.7 13.9 12.3 15.7 12.3 C16.8 12.3 17.6 13 18 13.8 C18.4 13 19.2 12.3 20.3 12.3 C22.1 12.3 23.8 13.7 23.8 15.8 C23.8 19.8 18 23.5 18 23.5 Z"
+              fill="#920d25"
+            />
+          </svg>
+        </span>
+        <span class="brand-text">
+          <strong>MUSEUM OF US</strong>
+        </span>
+      </a>
+
+      <nav class="nav-links" aria-label="Museum Rooms">
+        <a href="#foyer">The Foyer</a>
+        <a href="#gallery">The Gallery</a>
+        <a href="#studio">The Vault</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button
+          type="button"
+          class="pin-room-badge"
+          id="active-pin-badge"
+          hidden
+          title="Copy shareable museum link"
+        >
+          <span>PIN:</span> <strong id="nav-pin-code"></strong>
+        </button>
+        <button
+          type="button"
+          class="pill-cta pill-cta--nav-ghost"
+          id="open-heirloom-btn"
+          hidden
+        >
+          Unlock Heirloom
+        </button>
+        <button
+          type="button"
+          class="pill-cta pill-cta--nav-ghost"
+          id="copy-proposal-link-btn"
+          hidden
+        >
+          Copy Proposal Link
+        </button>
+        <div class="public-nav-actions" id="public-nav-actions" hidden>
+          <a href="setup.html#join" class="pill-cta pill-cta--nav-ghost" id="join-pin-nav-btn">
+            Enter PIN
+          </a>
+          <a href="setup.html" class="pill-cta pill-cta--nav" id="create-museum-nav-btn">
+            Create Your Own Museum
+          </a>
+        </div>
+        <button type="button" class="pill-cta pill-cta--nav" id="open-curate-nav">
+          Add a Memory
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- SECTION 1: THE GRAND FOYER (Dark Crimson #920d25) -->
+    <section id="foyer" class="section-crimson foyer-section">
+      <div class="mottle-layer" aria-hidden="true"></div>
+      <div class="container foyer-grid">
+        <!-- Editorial Left Column -->
+        <div class="foyer-copy">
+          <!-- Couple Signature (Private: Matthew/Ballerina & Ijem/Ẹnitọkànmifẹ́ | Public: Him & Her) -->
+          <p class="foyer-couple-signature" id="foyer-couple-signature"></p>
+
+          <!-- Peeking Cameo Cutout inside 'O' -->
+          <h1 class="hero-display-title" aria-label="Our Love Museum">
+            <span class="title-line">OUR</span>
+            <span class="title-line title-line--love">
+              <span>L</span><span class="peeking-o-cutout" title="Our Private Sanctuary">
+                <span class="peeking-o-inner" id="hero-o-slot">
+                  <img src="images/love1.jpg" alt="Our Love" class="peeking-o-photo" />
+                </span>
+              </span><span>VE</span>
+            </span>
+            <span class="title-line title-line--sub">MUSEUM</span>
+          </h1>
+
+          <!-- Canva Signature Calligraphic Quote -->
+          <p class="canva-script-quote">
+            &ldquo;Love is not perfect, but it is always real&rdquo;
+          </p>
+
+          <p class="foyer-description" id="foyer-description">
+            Every place we have been, every letter we have kept, and the quiet moments only the two of us know.
+          </p>
+
+          <div class="foyer-actions" id="foyer-actions">
+            <a href="setup.html" class="pill-cta pill-cta--primary" id="foyer-create-btn" hidden>
+              Create Your Own Museum
+            </a>
+            <a href="setup.html#join" class="pill-cta pill-cta--ghost" id="foyer-join-btn" hidden>
+              Open with PIN
+            </a>
+            <a href="#gallery" class="pill-cta pill-cta--primary" id="foyer-explore-btn">Explore the Gallery</a>
+            <button type="button" class="pill-cta pill-cta--ghost" id="open-curate-hero">Add a Memory</button>
+          </div>
+        </div>
+
+        <!-- Visual Centerpiece Column: Glass Cloche + Floating Love Letters -->
+        <div class="foyer-stage" aria-label="Illuminated Glass Cloche and Floating Love Letters">
+          <!-- Soft Ambient Spotlight Halo -->
+          <div class="cloche-ambient-halo" aria-hidden="true"></div>
+
+          <!-- Floating Love Letters (Orbiting the Cloche) -->
+          <button
+            type="button"
+            class="floating-letter floating-letter--1"
+            data-note-title="Note I &bull; Morning Light"
+            data-note-body="For every sleepy Sunday morning when you steal the warm side of the blanket and make me laugh before coffee."
+            aria-label="Read floating love letter 1"
+          >
+            <span class="envelope-body">
+              <span class="envelope-flap"></span>
+              <span class="envelope-seal"></span>
+              <span class="envelope-lines"></span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="floating-letter floating-letter--2"
+            data-note-title="Note II &bull; Under Glass"
+            data-note-body="Even our quietest ordinary Tuesdays deserve to be framed like rare museum pieces."
+            aria-label="Read floating love letter 2"
+          >
+            <span class="envelope-body">
+              <span class="envelope-flap"></span>
+              <span class="envelope-seal"></span>
+              <span class="envelope-lines"></span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="floating-letter floating-letter--3"
+            data-note-title="Note III &bull; Always Real"
+            data-note-body="Love is not perfect, but it is always real—especially in the little artifacts we collect together."
+            aria-label="Read floating love letter 3"
+          >
+            <span class="envelope-body">
+              <span class="envelope-flap"></span>
+              <span class="envelope-seal"></span>
+              <span class="envelope-lines"></span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="floating-letter floating-letter--4"
+            data-note-title="Note IV &bull; Every Chapter"
+            data-note-body="Here is to every memory we have already made, and all the ones waiting for us to hang on our thread."
+            aria-label="Read floating love letter 4"
+          >
+            <span class="envelope-body">
+              <span class="envelope-flap"></span>
+              <span class="envelope-seal"></span>
+              <span class="envelope-lines"></span>
+            </span>
+          </button>
+
+          <!-- Floating Letter Popup Card -->
+          <div class="unsealed-note-popover" id="unsealed-note-popover" hidden>
+            <button type="button" class="popover-close" id="close-note-popover" aria-label="Close note">&times;</button>
+            <span class="popover-kicker" id="popover-kicker">UNSEALED LETTER</span>
+            <p class="popover-text" id="popover-text"></p>
+          </div>
+
+          <!-- The Illuminated Glass Cloche (Bell Jar) -->
+          <div class="cloche-assembly">
+            <div class="cloche-finial" aria-hidden="true"></div>
+            <div class="cloche-dome">
+              <!-- Rising luminous dust / ember particles -->
+              <div class="cloche-particles" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+              </div>
+
+              <!-- Specular Glass Highlights -->
+              <div class="cloche-reflection-left" aria-hidden="true"></div>
+              <div class="cloche-reflection-right" aria-hidden="true"></div>
+
+              <!-- Eternal Keepsake Inside Cloche: Crimson Rose + Vow Scroll -->
+              <div class="cloche-keepsake">
+                <svg viewBox="0 0 220 260" class="eternal-rose-svg" role="img" aria-label="Illuminated eternal crimson rose and vow scroll beneath glass">
+                  <defs>
+                    <radialGradient id="roseHalo" cx="50%" cy="42%" r="48%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+                      <stop offset="45%" stop-color="#f9eede" stop-opacity="0.45" />
+                      <stop offset="100%" stop-color="#920d25" stop-opacity="0" />
+                    </radialGradient>
+                  </defs>
+                  <circle cx="110" cy="108" r="88" fill="url(#roseHalo)" />
+                  <!-- Rolled Vow Scroll at Base -->
+                  <g transform="translate(48 195) rotate(-6)">
+                    <rect x="0" y="6" width="124" height="24" rx="12" fill="#f9eede" stroke="#f4dfc9" stroke-width="2" />
+                    <ellipse cx="8" cy="18" rx="6" ry="11" fill="#f4dfc9" stroke="#920d25" stroke-opacity="0.35" />
+                    <ellipse cx="116" cy="18" rx="6" ry="11" fill="#f4dfc9" stroke="#920d25" stroke-opacity="0.35" />
+                    <rect x="56" y="5" width="12" height="26" rx="2" fill="#920d25" />
+                    <circle cx="62" cy="18" r="9" fill="#920d25" stroke="#f9eede" stroke-width="1.5" />
+                  </g>
+                  <!-- Stem & Leaves -->
+                  <path d="M110 118 Q106 168 112 204" stroke="#f9eede" stroke-width="3.2" fill="none" stroke-linecap="round" />
+                  <path d="M109 158 Q80 146 72 162 Q92 174 109 158 Z" fill="#f4dfc9" opacity="0.9" />
+                  <path d="M111 174 Q142 160 148 178 Q128 190 111 174 Z" fill="#f9eede" opacity="0.88" />
+                  <!-- Layered Rose Petals -->
+                  <path d="M74 96 C66 64 102 44 110 66 C118 44 154 64 146 96 C140 124 110 132 110 132 C110 132 80 124 74 96 Z" fill="#ffffff" opacity="0.95" />
+                  <path d="M84 94 C80 70 105 58 110 74 C115 58 140 70 136 94 C132 114 110 124 110 124 C110 124 88 114 84 94 Z" fill="#920d25" />
+                  <path d="M93 90 C92 73 108 66 110 78 C112 66 128 73 127 90 C125 104 110 112 110 112 C110 112 95 104 93 90 Z" fill="#b81736" />
+                  <path d="M100 86 C100 76 110 72 110 81 C110 72 120 76 120 86 C120 94 110 100 110 100 C110 100 100 94 100 86 Z" fill="#f9eede" opacity="0.88" />
+                  <!-- Fallen Petal -->
+                  <path d="M148 214 Q162 206 168 217 Q156 225 148 214 Z" fill="#f9eede" opacity="0.9" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Pedestal Base -->
+            <div class="cloche-pedestal">
+              <div class="pedestal-rim"></div>
+              <div class="pedestal-plinth" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Undulating Organic SVG Wave Divider (#920d25 -> #f4dfc9) -->
+      <div class="wave-divider" aria-hidden="true">
+        <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+          <path
+            d="M0,44 C180,108 360,12 560,64 C760,116 960,18 1160,58 C1310,88 1390,52 1440,36 L1440,120 L0,120 Z"
+            fill="#f4dfc9"
+          />
+        </svg>
+      </div>
+    </section>
+
+    <!-- SECTION 2: THE UNIFIED MUSEUM GALLERY (Warm #f4dfc9 Lace Showcase -> Crimson #920d25 Wavy String Room) -->
+    <section id="gallery" class="section-warm gallery-section">
+      <div class="mottle-layer mottle-layer--warm" aria-hidden="true"></div>
+      <div class="container">
+        <div class="gallery-header">
+          <h2 class="gallery-title">Every Moment We Have Kept</h2>
+          <p class="gallery-subtitle">
+            Our photographs and stories, framed in heirloom lace and hung in order along a single thread.
+          </p>
+
+          <!-- Filter Controls -->
+          <div class="gallery-controls">
+            <div class="filter-group" id="wing-filter-group" role="group" aria-label="Filter by Wing">
+              <button type="button" class="filter-chip is-active" data-wing="All">All Wings</button>
+              <button type="button" class="filter-chip" data-wing="First Chapters & Sparks">First Chapters</button>
+              <button type="button" class="filter-chip" data-wing="Soft Days & Inside Jokes">Soft Days</button>
+              <button type="button" class="filter-chip" data-wing="Letters, Vows & Forever">Letters &amp; Vows</button>
+            </div>
+
+            <div class="filter-group" id="curator-filter-group" role="group" aria-label="Filter by Curator">
+              <button type="button" class="filter-chip is-active" data-curator="All">Both Curators</button>
+              <button type="button" class="filter-chip" data-curator="Him" id="filter-curator-1">Added by Him</button>
+              <button type="button" class="filter-chip" data-curator="Her" id="filter-curator-2">Added by Her</button>
+              <button type="button" class="filter-chip" data-curator="Both of Us">Shared</button>
+            </div>
+
+            <button type="button" class="pill-cta pill-cta--crimson" id="open-curate-gallery">
+              + Add a Memory
+            </button>
+          </div>
+        </div>
+
+        <!-- Canva-Styled Crimson Velvet Showcase Wall with Scalloped Eyelet Lace Display Cases -->
+        <div class="canva-velvet-showcase is-revealable" id="canva-showcase"><div class="mottle-layer" aria-hidden="true"></div><div class="showcase-collage-grid" id="lace-showcase-grid"></div><p class="showcase-center-quote">Love is not perfect, but it is always real</p></div>
+      </div>
+
+      <!-- Undulating Organic SVG Wave Divider (#f4dfc9 -> #920d25) -->
+      <div class="wave-divider" aria-hidden="true">
+        <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+          <path
+            d="M0,52 C210,12 420,104 650,52 C880,0 1100,98 1310,48 C1370,34 1412,38 1440,46 L1440,120 L0,120 Z"
+            fill="#920d25"
+          />
+        </svg>
+      </div>
+
+      <!-- Wavy String & Slanted Artifact Cards Room (Dark Crimson #920d25) -->
+      <div class="gallery-thread-room section-crimson">
+        <div class="mottle-layer" aria-hidden="true"></div>
+        <div class="container">
+          <!-- The Wavy String & Slanted Cards Stage -->
+          <div class="string-gallery-stage" id="string-gallery-stage">
+            <!-- Top Anchor Hook where the Wavy String Begins -->
+            <div class="string-ceiling-anchor" id="string-anchor" aria-hidden="true">
+              <span class="anchor-ring"></span>
+            </div>
+
+            <!-- Background Continuous Wavy String SVG -->
+            <svg class="wavy-string-svg" id="wavy-string-svg" aria-hidden="true">
+              <path class="wavy-string-shadow" id="wavy-string-shadow" d="" />
+              <path class="wavy-string-main" id="wavy-string-main" d="" />
+            </svg>
+
+            <!-- Foreground Thread-Through Segments (Overlays Top Edge of Cards into Holes) -->
+            <svg class="wavy-string-over-svg" id="wavy-string-over-svg" aria-hidden="true"></svg>
+
+            <!-- Slanted Cards Container -->
+            <div class="slanted-cards-grid" id="slanted-cards-grid">
+              <!-- Dynamically populated slanted artifact cards -->
+            </div>
+
+            <!-- Empty State (when filters match nothing) -->
+            <div class="gallery-empty-state" id="gallery-empty-state" hidden>
+              <p>No memories hang in this filter yet.</p>
+              <button type="button" class="pill-cta pill-cta--primary" id="reset-filters-btn">
+                Show All Memories
+              </button>
+            </div>
+
+            <!-- Terminal Hanging Keepsake Tag -->
+            <div class="terminal-tag-wrap">
+              <button
+                type="button"
+                class="terminal-keepsake-tag"
+                id="terminal-add-tag"
+                aria-label="Add our next memory"
+              >
+                <span class="card-eyelet card-eyelet--tag" aria-hidden="true">
+                  <span class="eyelet-hole"></span>
+                </span>
+                <span class="tag-cta">+ Hang a New Memory</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Undulating Organic SVG Wave Divider (#920d25 -> #f4dfc9) -->
+        <div class="wave-divider" aria-hidden="true">
+          <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+            <path
+              d="M0,40 C240,106 460,12 720,68 C980,120 1200,14 1440,54 L1440,120 L0,120 Z"
+              fill="#f4dfc9"
+            />
+          </svg>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- SECTION 3: CURATORIAL VAULT & FOOTER (Warm Champagne #f4dfc9) -->
+  <footer id="studio" class="section-warm studio-footer">
+    <div class="mottle-layer mottle-layer--warm" aria-hidden="true"></div>
+    <div class="container">
+      <div class="squiggly-vault-frame">
+        <svg class="squiggly-border-svg" viewBox="0 0 1000 420" preserveAspectRatio="none" aria-hidden="true">
+          <path
+            d="M28,18 C140,8 260,26 390,14 C530,4 660,28 800,15 C890,7 955,20 974,26 C988,95 972,210 984,320 C990,375 976,398 966,402 C830,414 680,392 520,406 C360,418 200,394 42,404 C16,405 14,376 16,320 C24,210 10,95 28,18 Z"
+            fill="none"
+            stroke="#920d25"
+            stroke-width="3.5"
+            stroke-linecap="round"
+          />
+          <path
+            d="M36,28 C150,18 270,34 400,24 C540,14 670,36 810,24 C895,16 946,28 964,34 C976,102 962,212 972,314 C978,366 966,388 956,392 C824,404 674,384 516,396 C358,408 206,386 52,394 C28,395 26,368 28,314 C34,208 20,102 36,28 Z"
+            fill="none"
+            stroke="#ffffff"
+            stroke-width="2"
+            stroke-dasharray="8 8"
+          />
+        </svg>
+
+        <div class="vault-frame-content">
+          <h2 class="vault-heading">Add the Next Memory to Our Archive</h2>
+          <p class="canva-script-quote vault-quote vault-script-quote">Love is not perfect, but it is always real</p>
+          <p class="vault-copy">
+            Whether it is a ticket stub, a late-night selfie, or a handwritten promise, both of us
+            hold the keys to this museum. Upload new artifacts anytime or download a backup of our
+            entire collection.
+          </p>
+
+          <div class="heirloom-banner" id="vault-heirloom-banner" hidden>
+            <div class="heirloom-banner-copy">
+              <strong id="vault-heirloom-title">Free Museum Tier (Up to 8 Memories)</strong>
+              <span id="vault-heirloom-desc">
+                Unlock Heirloom once (&#8358;5,000 / $7) for custom names &amp; nicknames, Hero &ldquo;O&rdquo; portrait, unlimited memories, passcode lock, and your interactive Proposal Link.
+              </span>
+            </div>
+            <div class="heirloom-banner-actions">
+              <button type="button" class="pill-cta pill-cta--crimson" id="vault-unlock-heirloom-btn">
+                Unlock Heirloom
+              </button>
+              <a
+                href="proposal.html"
+                class="pill-cta pill-cta--outline-crimson"
+                id="vault-preview-proposal-link"
+                target="_blank"
+                rel="noopener"
+                hidden
+              >
+                Preview Proposal Link
+              </a>
+              <button
+                type="button"
+                class="pill-cta pill-cta--outline-crimson"
+                id="vault-edit-heirloom-btn"
+                hidden
+              >
+                Edit Heirloom Details
+              </button>
+            </div>
+          </div>
+
+          <div class="vault-actions">
+            <a href="setup.html" class="pill-cta pill-cta--crimson" id="vault-create-btn" hidden>
+              Create Your Own Museum
+            </a>
+
+            <button type="button" class="pill-cta pill-cta--crimson" id="open-curate-footer">
+              + Curate New Artifact
+            </button>
+
+            <button type="button" class="pill-cta pill-cta--outline-crimson" id="export-archive-btn">
+              <span>Export Archive (.json)</span>
+            </button>
+
+            <label class="pill-cta pill-cta--outline-crimson import-label">
+              <span>Import Archive</span>
+              <input type="file" id="import-archive-input" accept="application/json,.json" hidden />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-meta-bar">
+        <div class="footer-brand" id="footer-brand-meta">
+          <strong>THE MUSEUM OF US</strong>
+          <span>&bull; Built as an Anniversary Keepsake for Two</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ADD / EDIT ARTIFACT MODAL -->
+  <div class="modal-backdrop" id="curate-modal" role="dialog" aria-modal="true" aria-labelledby="curate-modal-title" hidden>
+    <div class="modal-card modal-card--curate">
+      <button type="button" class="modal-close-btn" id="close-curate-modal" aria-label="Close modal">&times;</button>
+
+      <div class="modal-header">
+        <h3 id="curate-modal-title">Hang a New Memory</h3>
+        <p>Upload a photo and write the story behind it to add it to our museum.</p>
+      </div>
+
+      <form id="artifact-form" class="curate-form">
+        <input type="hidden" id="artifact-id-input" value="" />
+
+        <div class="form-grid">
+          <!-- Left: Image Upload & Preview -->
+          <div class="upload-column">
+            <label class="dropzone" id="image-dropzone" for="image-file-input">
+              <input type="file" id="image-file-input" accept="image/*" hidden />
+              <div class="dropzone-preview" id="dropzone-preview" hidden>
+                <img id="preview-img-el" src="" alt="Selected memory preview" />
+                <span class="change-photo-chip">Click or drop to swap photo</span>
+              </div>
+              <div class="dropzone-placeholder" id="dropzone-placeholder">
+                <span class="dropzone-icon" aria-hidden="true">&#10047;</span>
+                <strong>Drop a memory photo here</strong>
+                <span>or click to choose from your device</span>
+              </div>
+            </label>
+
+            <label class="field-label">
+              <span>Or paste an Image URL (optional)</span>
+              <input
+                type="url"
+                id="image-url-input"
+                class="field-input"
+                placeholder="https://..."
+              />
+            </label>
+          </div>
+
+          <!-- Right: Metadata & Story -->
+          <div class="fields-column">
+            <label class="field-label">
+              <span>Memory Title *</span>
+              <input
+                type="text"
+                id="title-input"
+                class="field-input"
+                required
+                maxlength="80"
+                placeholder="e.g. Midnight Gelato in Rome"
+              />
+            </label>
+
+            <div class="two-col-fields">
+              <label class="field-label">
+                <span>Date / Moment *</span>
+                <input
+                  type="text"
+                  id="date-input"
+                  class="field-input"
+                  required
+                  maxlength="40"
+                  placeholder="e.g. November 15, 2026"
+                />
+              </label>
+
+              <label class="field-label">
+                <span>Curated By *</span>
+                <select id="curator-input" class="field-input">
+                  <option value="Him">Him</option>
+                  <option value="Her">Her</option>
+                  <option value="Both of Us">Both of Us</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="two-col-fields">
+              <label class="field-label">
+                <span>Exhibition Wing</span>
+                <select id="wing-input" class="field-input">
+                  <option value="First Chapters & Sparks">First Chapters &amp; Sparks</option>
+                  <option value="Soft Days & Inside Jokes">Soft Days &amp; Inside Jokes</option>
+                  <option value="Letters, Vows & Forever">Letters, Vows &amp; Forever</option>
+                </select>
+              </label>
+
+              <label class="field-label">
+                <span>Lace Showcase Style</span>
+                <select id="frame-style-input" class="field-input">
+                  <option value="Rectangular Lace Frame">Rectangular Lace Frame</option>
+                  <option value="Oval Lace Cameo">Oval Lace Cameo</option>
+                  <option value="Slanted String Card">Slanted String Card</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="field-label">
+              <span>The Story / Description *</span>
+              <textarea
+                id="story-input"
+                class="field-input field-textarea"
+                rows="3"
+                required
+                placeholder="Write what happened, how it felt, or why this moment stays with us..."
+              ></textarea>
+            </label>
+
+            <label class="field-label">
+              <span>Secret Note on the Back (optional)</span>
+              <input
+                type="text"
+                id="secret-note-input"
+                class="field-input"
+                maxlength="180"
+                placeholder="A whispered note revealed only when the card is flipped..."
+              />
+            </label>
+
+            <label class="checkbox-field">
+              <input type="checkbox" id="featured-input" checked />
+              <span>Also display in the Heirloom Lace Display Cases</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <span class="form-status-msg" id="form-status-msg" aria-live="polite"></span>
+          <div class="form-buttons">
+            <button type="button" class="pill-cta pill-cta--outline-crimson" id="cancel-curate-btn">
+              Cancel
+            </button>
+            <button type="submit" class="pill-cta pill-cta--crimson" id="save-artifact-btn">
+              Save &amp; Hang Memory
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LACE DISPLAY CASE LIGHTBOX MODAL -->
+  <div class="modal-backdrop modal-backdrop--dark" id="lightbox-modal" role="dialog" aria-modal="true" aria-labelledby="lightbox-title" hidden>
+    <div class="modal-card modal-card--lightbox">
+      <button type="button" class="modal-close-btn modal-close-btn--ivory" id="close-lightbox-modal" aria-label="Close display case">&times;</button>
+
+      <div class="lightbox-grid">
+        <div class="lightbox-frame-col">
+          <div id="lightbox-lace-mount"></div>
+        </div>
+
+        <div class="lightbox-info-col">
+          <span class="lightbox-byline" id="lightbox-curator">Curated by Me</span>
+          <h3 class="lightbox-title" id="lightbox-title">Memory Title</h3>
+          <p class="lightbox-date" id="lightbox-date">Date</p>
+          <p class="lightbox-wing" id="lightbox-wing">Exhibition Wing</p>
+
+          <div class="lightbox-story-box">
+            <p id="lightbox-story"></p>
+          </div>
+
+          <div class="lightbox-secret-box" id="lightbox-secret-box">
+            <button type="button" class="secret-reveal-btn" id="lightbox-secret-toggle">
+              &#10047; Unseal Secret Note on Back
+            </button>
+            <p class="secret-note-text" id="lightbox-secret-text" hidden></p>
+          </div>
+
+          <div class="lightbox-actions">
+            <button type="button" class="pill-cta pill-cta--primary" id="lightbox-edit-btn">
+              Edit Memory
+            </button>
+            <button type="button" class="pill-cta pill-cta--ghost" id="lightbox-feature-btn">
+              Toggle Lace Showcase
+            </button>
+            <button type="button" class="pill-cta pill-cta--ghost" id="lightbox-delete-btn">
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4-DIGIT VIEWER PASSCODE LOCK MODAL -->
+  <div
+    class="modal-backdrop modal-backdrop--dark"
+    id="passcode-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="passcode-modal-title"
+    hidden
+  >
+    <div class="modal-card passcode-card">
+      <div class="passcode-seal" aria-hidden="true">&#10084;</div>
+      <div class="modal-header">
+        <h3 id="passcode-modal-title">This Love Museum Is Sealed</h3>
+        <p id="passcode-modal-subtitle">
+          Enter the 4-digit passcode shared with you to step inside this private museum.
+        </p>
+      </div>
+      <form id="passcode-form" class="passcode-form">
+        <label for="passcode-modal-input" class="field-label passcode-field-label">
+          <span>4-Digit Viewer Passcode</span>
+          <input
+            type="password"
+            inputmode="numeric"
+            pattern="[0-9]{4}"
+            maxlength="4"
+            id="passcode-modal-input"
+            class="pin-input-large passcode-input"
+            placeholder="••••"
+            autocomplete="one-time-code"
+            required
+          />
+        </label>
+        <p class="form-status-msg passcode-status-msg" id="passcode-modal-status" aria-live="polite"></p>
+        <div class="passcode-actions">
+          <button type="submit" class="pill-cta pill-cta--crimson" id="passcode-submit-btn">
+            Unlock Museum
+          </button>
+          <a href="setup.html#join" class="pill-cta pill-cta--outline-crimson" id="passcode-back-link">
+            Enter a Different PIN
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- IN-MUSEUM HEIRLOOM UPGRADE & PAYMENT CHECKOUT MODAL -->
+  <div
+    class="modal-backdrop"
+    id="museum-heirloom-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mh-modal-title"
+    hidden
+  >
+    <div class="modal-card modal-card--heirloom">
+      <button type="button" class="modal-close-btn" id="close-heirloom-modal" aria-label="Close Heirloom modal">&times;</button>
+
+      <div class="modal-header">
+        <h3 id="mh-modal-title">Unlock Heirloom Edition</h3>
+        <p id="mh-modal-subtitle">
+          Personalize your museum with your real names, whispered nicknames, custom Hero &ldquo;O&rdquo; portrait, unlimited memories, optional passcode lock, and an interactive Proposal Link.
+        </p>
+      </div>
+
+      <div class="heirloom-banner heirloom-banner--notice" id="mh-limit-notice" hidden>
+        <div class="heirloom-banner-copy">
+          <strong>Free Museum Limit Reached (8 Memories)</strong>
+          <span id="mh-limit-notice-text">
+            Unlock Heirloom once to hang unlimited memories and save your next keepsake.
+          </span>
+        </div>
+      </div>
+
+      <form id="museum-heirloom-form" class="curate-form">
+        <div class="form-grid">
+          <div class="upload-column">
+            <label class="dropzone dropzone--cameo" id="mh-cameo-dropzone" for="mh-cameo-file">
+              <input type="file" id="mh-cameo-file" accept="image/*" hidden />
+              <div class="dropzone-preview" id="mh-cameo-preview" hidden>
+                <img id="mh-cameo-preview-img" src="" alt="Hero O cameo portrait preview" />
+                <span class="change-photo-chip">Click or drop to swap Hero portrait</span>
+              </div>
+              <div class="dropzone-placeholder" id="mh-cameo-placeholder">
+                <span class="dropzone-icon" aria-hidden="true">&#10047;</span>
+                <strong>Hero &ldquo;O&rdquo; Cameo Portrait</strong>
+                <span>Optional photo framed inside &ldquo;L&#9711;VE&rdquo;</span>
+              </div>
+            </label>
+
+            <label class="field-label">
+              <span>Or paste Hero Portrait URL (optional)</span>
+              <input type="url" id="mh-cameo-url" class="field-input" placeholder="https://..." />
+            </label>
+
+            <label class="field-label">
+              <span>Optional 4-Digit Viewer Passcode</span>
+              <input
+                type="text"
+                inputmode="numeric"
+                maxlength="4"
+                id="mh-passcode"
+                class="field-input"
+                placeholder="e.g. 1402 (leave blank for open PIN)"
+                autocomplete="off"
+              />
+            </label>
+            <label class="checkbox-field" id="mh-clear-passcode-wrap" hidden>
+              <input type="checkbox" id="mh-clear-passcode" />
+              <span>Remove existing 4-digit passcode lock</span>
+            </label>
+          </div>
+
+          <div class="fields-column">
+            <div class="two-col-fields">
+              <label class="field-label">
+                <span>Partner 1 Name *</span>
+                <input
+                  type="text"
+                  id="mh-partner1-name"
+                  class="field-input"
+                  required
+                  maxlength="36"
+                  placeholder="e.g. Daniel"
+                />
+              </label>
+              <label class="field-label">
+                <span>Partner 1 Nickname (optional)</span>
+                <input
+                  type="text"
+                  id="mh-partner1-nickname"
+                  class="field-input"
+                  maxlength="36"
+                  placeholder="Hover / tap reveal"
+                />
+              </label>
+            </div>
+
+            <div class="two-col-fields">
+              <label class="field-label">
+                <span>Partner 2 Name *</span>
+                <input
+                  type="text"
+                  id="mh-partner2-name"
+                  class="field-input"
+                  required
+                  maxlength="36"
+                  placeholder="e.g. Amara"
+                />
+              </label>
+              <label class="field-label">
+                <span>Partner 2 Nickname (optional)</span>
+                <input
+                  type="text"
+                  id="mh-partner2-nickname"
+                  class="field-input"
+                  maxlength="36"
+                  placeholder="Hover / tap reveal"
+                />
+              </label>
+            </div>
+
+            <label class="field-label">
+              <span>Interactive Proposal Question</span>
+              <textarea
+                id="mh-proposal-prompt"
+                class="field-input field-textarea"
+                rows="3"
+                maxlength="240"
+                placeholder="Will you accept Our Love Museum and step inside every memory we have kept?"
+              ></textarea>
+            </label>
+
+            <div id="mh-payment-section">
+              <div class="field-label">
+                <span>Choose Payment Rail (<span id="mh-price-summary">&#8358;5,000 / $7 one-time</span>)</span>
+              </div>
+              <div class="payment-rail-grid" id="mh-payment-rails" role="radiogroup" aria-label="Payment Provider">
+                <label class="payment-rail-card is-selected" data-rail="paystack">
+                  <input type="radio" name="mh-payment-rail" value="paystack" checked />
+                  <strong>Paystack</strong>
+                  <span>Nigerian Cards, Transfer, USSD &amp; OPay</span>
+                  <em id="mh-paystack-price">&#8358;5,000</em>
+                </label>
+                <label class="payment-rail-card" data-rail="flutterwave">
+                  <input type="radio" name="mh-payment-rail" value="flutterwave" />
+                  <strong>Flutterwave</strong>
+                  <span>African Cards, Bank &amp; Mobile Money</span>
+                  <em id="mh-flutterwave-price">&#8358;5,000</em>
+                </label>
+                <label class="payment-rail-card" data-rail="mor">
+                  <input type="radio" name="mh-payment-rail" value="mor" />
+                  <strong>International Checkout</strong>
+                  <span>Merchant of Record &bull; Global Cards &amp; Apple Pay</span>
+                  <em id="mh-mor-price">$7 USD</em>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <span class="form-status-msg" id="mh-status-msg" aria-live="polite"></span>
+          <div class="form-buttons">
+            <button type="button" class="pill-cta pill-cta--outline-crimson" id="cancel-heirloom-btn">
+              Cancel
+            </button>
+            <button type="button" class="pill-cta pill-cta--outline-crimson" id="mh-sandbox-btn">
+              Sandbox Test Unlock
+            </button>
+            <button type="submit" class="pill-cta pill-cta--crimson" id="mh-complete-payment-btn">
+              Complete Payment &amp; Unlock Heirloom
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="mh-unlocked-panel" id="mh-unlocked-panel" hidden>
+        <div class="heirloom-banner">
+          <div class="heirloom-banner-copy">
+            <strong>Heirloom Edition Unlocked!</strong>
+            <span>Your custom names, Hero portrait, unlimited memories, and dodging-No Proposal Link are active.</span>
+          </div>
+        </div>
+        <div class="link-copy-row">
+          <input
+            type="text"
+            id="mh-proposal-link-input"
+            class="field-input"
+            readonly
+            aria-label="Interactive Proposal Link"
+          />
+          <button type="button" class="pill-cta pill-cta--outline-crimson" id="mh-copy-proposal-btn">
+            Copy Proposal Link
+          </button>
+        </div>
+        <div class="vault-actions">
+          <a
+            href="proposal.html"
+            class="pill-cta pill-cta--crimson"
+            id="mh-open-proposal-link"
+            target="_blank"
+            rel="noopener"
+          >
+            Open Proposal Page &rarr;
+          </a>
+          <button type="button" class="pill-cta pill-cta--outline-crimson" id="mh-done-btn">
+            Return to Museum
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

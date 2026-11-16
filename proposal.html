@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>An Invitation &mdash; The Museum of Us</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Great+Vibes&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Proposal Stage & Heirloom Card (Palette: #920d25, #f4dfc9, #f9eede, #ffffff, #2b030a) */
+    .proposal-nav {
+      background: rgba(146, 13, 37, 0.94);
+    }
+
+    .proposal-stage {
+      min-height: calc(100dvh - 75px);
+      padding: clamp(28px, 4.5vw, 52px) 0 clamp(44px, 6vw, 72px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .proposal-ambient-halo {
+      position: absolute;
+      top: 42%;
+      left: 50%;
+      width: min(760px, 110vw);
+      height: min(760px, 110vw);
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        rgba(249, 238, 222, 0.2) 0%,
+        rgba(244, 223, 201, 0.08) 38%,
+        transparent 70%
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .proposal-shell {
+      position: relative;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: min(740px, calc(100% - 32px));
+      margin-inline: auto;
+    }
+
+    .proposal-loading {
+      text-align: center;
+      color: var(--accent-ivory);
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 40px 20px;
+    }
+
+    .proposal-experience {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .proposal-experience[hidden],
+    .proposal-card[hidden],
+    .proposal-outcome[hidden],
+    .proposal-loading[hidden],
+    .proposal-arena[hidden] {
+      display: none !important;
+    }
+
+    .proposal-crest {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      z-index: 5;
+      margin-bottom: -40px;
+    }
+
+    .proposal-couple-signature {
+      margin: 0 0 14px;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--bg-warm);
+    }
+
+    .proposal-couple-signature:empty {
+      display: none;
+    }
+
+    .proposal-cameo {
+      width: clamp(148px, 24vw, 198px);
+      height: auto;
+      margin: 0 auto;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+      position: relative;
+    }
+
+    .proposal-cameo .lace-oval-viewport img {
+      border-radius: 0;
+    }
+
+    .proposal-lace-case {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      filter: drop-shadow(0 18px 34px rgba(43, 3, 10, 0.48));
+    }
+
+    .proposal-card {
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      background: linear-gradient(175deg, var(--accent-ivory) 0%, var(--bg-warm) 100%);
+      color: var(--text-on-warm);
+      border-radius: 28px;
+      border: 1.5px solid rgba(255, 255, 255, 0.78);
+      box-shadow:
+        0 28px 64px rgba(43, 3, 10, 0.45),
+        inset 0 0 0 1px rgba(146, 13, 37, 0.12);
+      padding: 60px clamp(20px, 5vw, 48px) clamp(28px, 4.5vw, 40px);
+      text-align: center;
+    }
+
+    .proposal-card--narrow {
+      width: min(520px, 100%);
+      padding: clamp(28px, 5vw, 42px) clamp(22px, 5vw, 40px);
+    }
+
+    .proposal-script-tag {
+      margin: 0 0 8px;
+      font-family: var(--font-script);
+      font-size: clamp(1.65rem, 3.2vw, 2.2rem);
+      color: var(--bg-crimson);
+      line-height: 1.2;
+    }
+
+    .proposal-prompt {
+      margin: 0 auto 14px;
+      max-width: 24ch;
+      font-family: var(--font-display);
+      font-size: clamp(1.85rem, 4vw, 2.75rem);
+      font-weight: 700;
+      font-style: normal;
+      line-height: 1.12;
+      color: var(--text-on-warm);
+    }
+
+    .proposal-nudge {
+      margin: 0 auto 22px;
+      max-width: 48ch;
+      min-height: 2.8em;
+      font-size: 0.98rem;
+      line-height: 1.55;
+      color: var(--text-on-warm-muted);
+      transition: color 0.3s ease, transform 0.3s var(--ease-cinematic);
+    }
+
+    .proposal-nudge.is-teasing {
+      color: var(--bg-crimson);
+      font-weight: 600;
+    }
+
+    .proposal-arena {
+      position: relative;
+      width: 100%;
+      min-height: 112px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: min-height 0.35s var(--ease-cinematic);
+    }
+
+    .proposal-arena.is-dodging {
+      min-height: 224px;
+      align-items: flex-start;
+    }
+
+    .proposal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      padding: 8px;
+    }
+
+    .proposal-arena.is-dodging .proposal-actions {
+      padding-top: 12px;
+    }
+
+    .proposal-btn-yes {
+      --yes-scale: 1;
+      position: relative;
+      z-index: 2;
+      background: var(--bg-crimson);
+      color: var(--accent-white);
+      border-color: var(--bg-crimson);
+      padding: 14px 28px;
+      font-size: 0.98rem;
+      box-shadow: 0 14px 30px rgba(146, 13, 37, 0.32);
+      transform: scale(var(--yes-scale));
+      transition:
+        transform 0.38s var(--ease-cinematic),
+        background-color 0.25s ease,
+        box-shadow 0.35s var(--ease-cinematic);
+    }
+
+    .proposal-btn-yes:hover {
+      background: var(--bg-crimson-deep);
+      transform: scale(calc(var(--yes-scale) * 1.04)) translateY(-1px);
+      box-shadow: 0 18px 36px rgba(146, 13, 37, 0.42);
+    }
+
+    .proposal-btn-no {
+      position: relative;
+      z-index: 3;
+      background: var(--accent-white);
+      color: var(--text-on-warm);
+      border-color: rgba(146, 13, 37, 0.36);
+      padding: 13px 26px;
+      font-size: 0.94rem;
+      box-shadow: 0 8px 20px rgba(43, 3, 10, 0.1);
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .proposal-btn-no:hover {
+      background: var(--bg-warm);
+      border-color: var(--bg-crimson);
+      color: var(--bg-crimson);
+    }
+
+    .proposal-btn-no.is-floating {
+      position: absolute;
+      margin: 0;
+      max-width: calc(100% - 16px);
+      white-space: normal;
+      line-height: 1.25;
+      padding: 11px 18px;
+      font-size: 0.88rem;
+      transition:
+        left 0.34s var(--ease-cinematic),
+        top 0.34s var(--ease-cinematic),
+        background-color 0.25s ease,
+        border-color 0.25s ease,
+        color 0.25s ease,
+        box-shadow 0.25s ease;
+    }
+
+    .proposal-btn-no.is-floating:hover {
+      transform: none;
+    }
+
+    .proposal-btn-no.is-settled {
+      border-color: rgba(146, 13, 37, 0.55);
+      background: var(--accent-ivory);
+    }
+
+    /* Outcomes (Accepted Celebration & Bittersweet Rejection) */
+    .proposal-outcome {
+      padding: 10px 6px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: proposalFadeUp 0.45s var(--ease-cinematic) both;
+    }
+
+    .proposal-celebration-script {
+      margin: 0;
+      font-family: var(--font-script);
+      font-size: clamp(1.9rem, 3.6vw, 2.5rem);
+      color: var(--bg-crimson);
+      line-height: 1.15;
+    }
+
+    .proposal-celebration-msg,
+    .proposal-bittersweet-msg {
+      margin: 0;
+      max-width: 44ch;
+      font-size: 1.02rem;
+      line-height: 1.6;
+      color: var(--text-on-warm);
+    }
+
+    .proposal-anyway-link {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 6px 12px;
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--text-on-warm-muted);
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(146, 13, 37, 0.45);
+      transition: color 0.25s ease, border-color 0.25s ease;
+    }
+
+    .proposal-anyway-link:hover {
+      color: var(--bg-crimson);
+      border-bottom-color: var(--bg-crimson);
+    }
+
+    /* Passcode & Not Found Form Styles */
+    .proposal-passcode-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .proposal-passcode-input {
+      width: min(240px, 100%);
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 1.35rem;
+      letter-spacing: 0.28em;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1.5px solid rgba(146, 13, 37, 0.35);
+      background: var(--accent-white);
+      color: var(--text-on-warm);
+    }
+
+    .proposal-passcode-input:focus {
+      outline: none;
+      border-color: var(--bg-crimson);
+      box-shadow: 0 0 0 3px rgba(146, 13, 37, 0.14);
+    }
+
+    .proposal-status-error {
+      margin: 2px 0 0;
+      min-height: 1.3em;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--bg-crimson);
+    }
+
+    .proposal-fallback-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    /* Floating Crimson & Cream Hearts Layer */
+    .proposal-hearts {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 8;
+    }
+
+    .proposal-heart {
+      position: absolute;
+      bottom: -48px;
+      font-size: 0;
+      line-height: 0;
+      opacity: 0;
+      will-change: transform, opacity;
+      animation: proposalCardHeartFloat var(--heart-dur, 4.8s) ease-in forwards;
+      animation-delay: var(--heart-delay, 0s);
+    }
+
+    .proposal-heart--ambient {
+      animation-iteration-count: infinite;
+      animation-timing-function: ease-in-out;
+    }
+
+    @keyframes proposalCardHeartFloat {
+      0% {
+        opacity: 0;
+        transform: translate3d(0, 0, 0) scale(0.7) rotate(var(--heart-rot-start, -10deg));
+      }
+      14% {
+        opacity: var(--heart-opacity, 0.92);
+      }
+      75% {
+        opacity: var(--heart-opacity, 0.92);
+      }
+      100% {
+        opacity: 0;
+        transform: translate3d(var(--heart-drift, 24px), calc(-105vh - 80px), 0)
+          scale(var(--heart-scale, 1.15))
+          rotate(var(--heart-rot-end, 14deg));
+      }
+    }
+
+    @keyframes proposalFadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .proposal-card {
+        padding: 54px 22px 30px;
+        border-radius: 24px;
+      }
+
+      .proposal-card--narrow {
+        padding: 28px 20px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .proposal-shell {
+        width: calc(100% - 24px);
+      }
+
+      .proposal-crest {
+        margin-bottom: -34px;
+      }
+
+      .proposal-card {
+        padding: 50px 18px 26px;
+        border-radius: 22px;
+      }
+
+      .proposal-card--narrow {
+        padding: 26px 18px;
+      }
+
+      .proposal-arena {
+        min-height: 132px;
+      }
+
+      .proposal-arena.is-dodging {
+        min-height: 236px;
+      }
+
+      .proposal-btn-yes {
+        padding: 13px 22px;
+        font-size: 0.94rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Subtle Top Navigation -->
+  <header class="museum-nav proposal-nav" id="top-nav">
+    <div class="nav-inner">
+      <a href="index.html" class="brand-mark" id="proposal-brand-link" aria-label="The Museum of Us">
+        <span class="wax-seal-mini" aria-hidden="true">
+          <svg viewBox="0 0 36 36" width="32" height="32">
+            <path
+              d="M18 2 C21 2 23 4.2 25.8 3.6 C28.5 3 30.2 5.8 32 7.8 C34 9.9 33 13 34.4 15.6 C35.8 18.2 33.8 20.8 33.8 23.8 C33.8 26.8 31 28.4 29 30.5 C27 32.6 24 32 21.5 33.6 C19 35.1 16 33.4 13.3 33.6 C10.6 33.8 8.8 31 6.4 29.5 C4 28 4.4 24.8 2.8 22.3 C1.2 19.8 3 17 2.4 14.2 C1.8 11.4 4.5 9.6 6.2 7.2 C7.8 4.8 11 5.2 13.5 3.6 C15.4 2.4 16.5 2 18 2 Z"
+              fill="#f9eede"
+            />
+            <circle cx="18" cy="18" r="10.5" fill="none" stroke="#920d25" stroke-width="1.3" stroke-opacity="0.45" />
+            <path
+              d="M18 23.5 C18 23.5 12.2 19.8 12.2 15.8 C12.2 13.7 13.9 12.3 15.7 12.3 C16.8 12.3 17.6 13 18 13.8 C18.4 13 19.2 12.3 20.3 12.3 C22.1 12.3 23.8 13.7 23.8 15.8 C23.8 19.8 18 23.5 18 23.5 Z"
+              fill="#920d25"
+            />
+          </svg>
+        </span>
+        <span class="brand-text">
+          <strong>MUSEUM OF US</strong>
+        </span>
+      </a>
+
+      <div class="nav-actions">
+        <span class="pin-room-badge" id="proposal-pin-badge" hidden>
+          <span>PIN:</span> <strong id="proposal-pin-code"></strong>
+        </span>
+        <a href="setup.html" class="pill-cta pill-cta--nav-ghost" id="proposal-nav-cta">
+          Create Your Own
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section-crimson proposal-stage" id="proposal-stage">
+      <div class="mottle-layer" aria-hidden="true"></div>
+      <div class="proposal-ambient-halo" aria-hidden="true"></div>
+      <div class="proposal-hearts" id="proposal-hearts" aria-hidden="true"></div>
+
+      <div class="container proposal-shell">
+        <!-- Loading State -->
+        <p class="proposal-loading" id="proposal-loading" aria-live="polite">
+          Unsealing your invitation&hellip;
+        </p>
+
+        <!-- Optional 4-Digit Passcode Gate -->
+        <article class="proposal-card proposal-card--narrow" id="proposal-passcode-card" hidden>
+          <p class="proposal-script-tag">Sealed Keepsake</p>
+          <h1 class="proposal-prompt">Enter Your Passcode</h1>
+          <p class="proposal-nudge" style="min-height: auto; margin-bottom: 8px;">
+            This private Love Museum invitation is protected by a 4-digit keepsake code.
+          </p>
+          <form class="proposal-passcode-form" id="proposal-passcode-form">
+            <input
+              type="password"
+              inputmode="numeric"
+              maxlength="12"
+              autocomplete="off"
+              class="proposal-passcode-input"
+              id="proposal-passcode-input"
+              placeholder="&bull;&bull;&bull;&bull;"
+              aria-label="Enter 4-digit museum passcode"
+              required
+            />
+            <button type="submit" class="pill-cta pill-cta--crimson" id="proposal-passcode-submit">
+              Unseal Invitation
+            </button>
+            <p class="proposal-status-error" id="proposal-passcode-error" aria-live="polite"></p>
+          </form>
+        </article>
+
+        <!-- Missing PIN / Not Found State -->
+        <article class="proposal-card proposal-card--narrow" id="proposal-notfound-card" hidden>
+          <p class="proposal-script-tag">Lost Invitation</p>
+          <h1 class="proposal-prompt">We Could Not Find That Keepsake</h1>
+          <p class="proposal-nudge" style="min-height: auto;">
+            Double-check the 6-character PIN in your link, or explore our Sample Exhibition while you create your own.
+          </p>
+          <div class="proposal-fallback-actions">
+            <a href="setup.html#join" class="pill-cta pill-cta--crimson">Enter Another PIN</a>
+            <a href="index.html" class="pill-cta pill-cta--outline-crimson">View Sample Museum</a>
+          </div>
+        </article>
+
+        <!-- Main Interactive Proposal Experience -->
+        <div class="proposal-experience" id="proposal-experience" hidden>
+          <div class="proposal-crest">
+            <p class="foyer-couple-signature proposal-couple-signature" id="proposal-couple-names"></p>
+            <div class="proposal-cameo" id="proposal-cameo">
+              <div class="lace-oval-case proposal-lace-case">
+                <div class="lace-oval-viewport">
+                  <img id="proposal-cameo-img" src="images/love1.jpg" alt="Our Keepsake Portrait" />
+                </div>
+                <svg class="lace-oval-overlay" id="proposal-lace-svg" viewBox="0 0 240 300" aria-hidden="true"></svg>
+              </div>
+            </div>
+          </div>
+
+          <article class="proposal-card" id="proposal-card">
+            <p class="proposal-script-tag">A private invitation for two</p>
+            <h1 class="proposal-prompt" id="proposal-prompt">
+              Will you accept Our Love Museum and open every memory inside?
+            </h1>
+            <p class="proposal-nudge" id="proposal-nudge" aria-live="polite">
+              Every Foyer letter and memory inside was placed here for the two of us.
+            </p>
+
+            <div class="proposal-arena" id="proposal-arena">
+              <div class="proposal-actions" id="proposal-actions">
+                <button type="button" class="pill-cta proposal-btn-yes" id="proposal-btn-yes">
+                  Yes, Open Our Museum &hearts;
+                </button>
+                <button type="button" class="pill-cta proposal-btn-no" id="proposal-btn-no">
+                  No
+                </button>
+              </div>
+            </div>
+
+            <div class="proposal-outcome proposal-bittersweet" id="proposal-bittersweet" hidden>
+              <p class="proposal-bittersweet-msg" id="proposal-bittersweet-msg">
+                Even if today's answer is No, this keepsake will stay right here whenever your heart changes.
+              </p>
+              <a href="index.html" class="proposal-anyway-link" id="proposal-open-anyway">
+                Actually, open Our Love Museum anyway &hearts;
+              </a>
+            </div>
+
+            <div class="proposal-outcome proposal-celebration" id="proposal-celebration" hidden>
+              <p class="proposal-celebration-script">Forever starts inside</p>
+              <p class="proposal-celebration-msg" id="proposal-celebration-msg">
+                Yes! Opening Our Love Museum and every memory kept inside&hellip;
+              </p>
+              <a href="index.html" class="pill-cta pill-cta--crimson" id="proposal-enter-now">
+                Enter Our Love Museum &rarr;
+              </a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="proposal.js"></script>
+</body>
+</html>

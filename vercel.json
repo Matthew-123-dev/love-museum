@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "{museum_store.py,data/**}"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.py" },
+    { "source": "/private", "destination": "/index.html" },
+    { "source": "/public", "destination": "/index.html" },
+    { "source": "/setup", "destination": "/setup.html" },
+    { "source": "/login", "destination": "/setup.html" },
+    { "source": "/proposal", "destination": "/proposal.html" }
+  ]
+}
