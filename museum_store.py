@@ -695,7 +695,7 @@ def _verify_payment_transaction(provider: str, reference: str) -> tuple[bool, in
 
 
 def get_room(pin: str | None) -> dict[str, Any] | None:
-    """Fetch a museum room by PIN (or return SAMPLE / FOUNDERS if requested)."""
+    """Fetch a museum room by PIN (or return SAMPLE if requested)."""
     norm = normalize_pin(pin) or "SAMPLE"
 
     if norm == "SAMPLE":
