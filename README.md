@@ -80,11 +80,3 @@ Local rooms created during development are stored in `data/museums.json` (git-ig
 | `FLUTTERWAVE_PUBLIC_KEY` / `FLUTTERWAVE_SECRET_KEY` | Live Flutterwave verification for Heirloom Unlock | Optional |
 | `MOR_CHECKOUT_URL` | External Merchant of Record checkout link (e.g. Lemon Squeezy / Polar) for international couples | Optional |
 
-### Deploying to Vercel
-1. Push this repository to GitHub:
-   ```powershell
-   git remote add origin https://github.com/<YOUR_USERNAME>/our-love-museum.git
-   git push -u origin main
-   ```
-2. Import the repository in **Vercel**, connect **Upstash Redis** from the Vercel Marketplace, and add any optional payment environment variables in **Project Settings → Environment Variables**.
-3. Deploy to production.
