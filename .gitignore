@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *.pyc
+.pytest_cache/
+.venv/
+venv/
 
 # Vercel local CLI state
 .vercel/
@@ -16,9 +19,12 @@ __pycache__/
 # Local package dependencies
 node_modules/
 
-# Local runtime couple rooms database
+# Local runtime couple rooms database & logs
 data/museums.json
+*.log
 
 # OS & editor clutter
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
