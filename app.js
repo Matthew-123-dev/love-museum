@@ -43,6 +43,12 @@
     },
   ];
 
+  const DEFAULT_WINGS = [
+    "First Chapters & Sparks",
+    "Soft Days & Inside Jokes",
+    "Letters, Vows & Forever",
+  ];
+
   const EDITION_PRESETS = {
     public: {
       partner1: { id: "Him", name: "Him", nickname: "" },
@@ -178,6 +184,7 @@
       proposalPrompt: "Will you accept Our Love Museum and step inside every memory we have kept?",
       proposalAccepted: false,
       ...EDITION_PRESETS.public,
+      wings: structuredClone(DEFAULT_WINGS),
       foyerNotes: structuredClone(DEFAULT_FOYER_NOTES),
     },
     artifacts: [],
@@ -218,8 +225,20 @@
     vaultPreviewProposalLink: document.getElementById("vault-preview-proposal-link"),
     vaultEditHeirloomBtn: document.getElementById("vault-edit-heirloom-btn"),
     footerBrandMeta: document.getElementById("footer-brand-meta"),
+    wingFilterGroup: document.getElementById("wing-filter-group"),
+    openWingsModalBtn: document.getElementById("open-wings-modal-btn"),
     filterCurator1: document.getElementById("filter-curator-1"),
     filterCurator2: document.getElementById("filter-curator-2"),
+
+    // Gallery Wings Editor Modal
+    wingsModal: document.getElementById("wings-modal"),
+    closeWingsModal: document.getElementById("close-wings-modal"),
+    cancelWingsBtn: document.getElementById("cancel-wings-btn"),
+    wingsForm: document.getElementById("wings-form"),
+    wingsEditorList: document.getElementById("wings-editor-list"),
+    addWingRowBtn: document.getElementById("add-wing-row-btn"),
+    wingsCountHint: document.getElementById("wings-count-hint"),
+    wingsStatusMsg: document.getElementById("wings-status-msg"),
 
     laceShowcaseGrid: document.getElementById("lace-showcase-grid"),
     slantedCardsGrid: document.getElementById("slanted-cards-grid"),
@@ -608,6 +627,7 @@
     }
 
     applyFoyerNotes();
+    renderWingControls();
   }
 
   /* ------------------------------------------------------------------------
@@ -738,6 +758,74 @@
     return wrapper;
   }
 
+  function sanitizeWings(rawWings) {
+    if (!Array.isArray(rawWings)) {
+      return structuredClone(DEFAULT_WINGS);
+    }
+    const cleaned = [];
+    const seen = new Set();
+    for (const entry of rawWings) {
+      const label = String(entry || "").trim().slice(0, 48);
+      if (!label) continue;
+      const key = label.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cleaned.push(label);
+      if (cleaned.length >= 8) break;
+    }
+    return cleaned.length ? cleaned : structuredClone(DEFAULT_WINGS);
+  }
+
+  function populateWingSelectOptions(selectedWing = "") {
+    if (!dom.wingInput) return;
+    const wings = sanitizeWings(state.room.wings);
+    const options = [...wings];
+    const desired = String(selectedWing || "").trim();
+    if (desired && !options.includes(desired)) {
+      options.push(desired);
+    }
+
+    dom.wingInput.innerHTML = options
+      .map((wing) => `<option value="${escapeAttr(wing)}">${escapeHtml(wing)}</option>`)
+      .join("");
+    dom.wingInput.value = desired && options.includes(desired) ? desired : options[0];
+  }
+
+  function renderWingControls() {
+    const wings = sanitizeWings(state.room.wings);
+    state.room.wings = wings;
+    if (state.wingFilter !== "All" && !wings.includes(state.wingFilter)) {
+      state.wingFilter = "All";
+    }
+
+    if (dom.wingFilterGroup) {
+      const canEditWings = !state.room.isSample;
+      const wingButtonsHtml = wings
+        .map(
+          (wing) => `
+            <button
+              type="button"
+              class="filter-chip${state.wingFilter === wing ? " is-active" : ""}"
+              data-wing="${escapeAttr(wing)}"
+            >${escapeHtml(wing)}</button>`
+        )
+        .join("");
+
+      const editBtnHtml = canEditWings
+        ? `<button type="button" class="filter-chip filter-chip--edit" id="open-wings-modal-btn" title="Edit gallery wings" aria-label="Edit gallery wings">&#9998; Edit Wings</button>`
+        : "";
+
+      dom.wingFilterGroup.innerHTML = `
+        <button type="button" class="filter-chip${state.wingFilter === "All" ? " is-active" : ""}" data-wing="All">All Wings</button>
+        ${wingButtonsHtml}
+        ${editBtnHtml}
+      `;
+      dom.openWingsModalBtn = document.getElementById("open-wings-modal-btn");
+    }
+
+    populateWingSelectOptions(dom.wingInput?.value || "");
+  }
+
   /* ------------------------------------------------------------------------
      CLOUD + LOCAL ROOM PERSISTENCE
      ------------------------------------------------------------------------ */
@@ -782,6 +870,7 @@
       proposalAccepted: Boolean(loadedRoom.proposalAccepted),
       paymentProvider: String(loadedRoom.paymentProvider || ""),
       paymentRef: String(loadedRoom.paymentRef || ""),
+      wings: sanitizeWings(loadedRoom.wings),
       foyerNotes:
         Array.isArray(loadedRoom.foyerNotes) && loadedRoom.foyerNotes.length === 4
           ? loadedRoom.foyerNotes
@@ -930,6 +1019,7 @@
           "Will you accept Our Love Museum and step inside every memory we have kept?",
         proposalAccepted: false,
         ...structuredClone(EDITION_PRESETS.public),
+        wings: structuredClone(DEFAULT_WINGS),
         foyerNotes: structuredClone(DEFAULT_FOYER_NOTES),
       };
       state.artifacts = normalizeArtifactsForEdition(structuredClone(state.defaults));
@@ -1371,7 +1461,7 @@
         if (dom.curatorInput) {
           dom.curatorInput.value = mapCuratorForActiveEdition(item.curator);
         }
-        if (dom.wingInput) dom.wingInput.value = item.wing;
+        populateWingSelectOptions(item.wing);
         if (dom.frameStyleInput) {
           dom.frameStyleInput.value = item.frameStyle || "Rectangular Lace Frame";
         }
@@ -1395,6 +1485,7 @@
         });
       }
       if (dom.featuredInput) dom.featuredInput.checked = true;
+      populateWingSelectOptions(state.wingFilter !== "All" ? state.wingFilter : "");
     }
 
     dom.curateModal.hidden = false;
@@ -1474,7 +1565,7 @@
     const date = dom.dateInput?.value.trim() || "";
     const story = dom.storyInput?.value.trim() || "";
     const curator = mapCuratorForActiveEdition(dom.curatorInput?.value || "Both of Us");
-    const wing = dom.wingInput?.value || "First Chapters & Sparks";
+    const wing = dom.wingInput?.value || sanitizeWings(state.room.wings)[0] || DEFAULT_WINGS[0];
     const frameStyle = dom.frameStyleInput?.value || "Rectangular Lace Frame";
     const secretNote = dom.secretNoteInput?.value.trim() || "";
     const featured = Boolean(dom.featuredInput?.checked);
@@ -2143,6 +2234,161 @@
   }
 
   /* ------------------------------------------------------------------------
+     GALLERY WINGS / CATEGORIES EDITOR MODAL
+     ------------------------------------------------------------------------ */
+  let draftWingsState = [];
+
+  function setWingsStatus(message) {
+    if (dom.wingsStatusMsg) dom.wingsStatusMsg.textContent = message || "";
+  }
+
+  function syncDraftWingsFromDom() {
+    if (!dom.wingsEditorList) return;
+    const rows = Array.from(dom.wingsEditorList.querySelectorAll(".wing-editor-row"));
+    draftWingsState = rows.map((row) => ({
+      original: row.dataset.originalWing || "",
+      label: row.querySelector(".wing-editor-input")?.value ?? "",
+    }));
+  }
+
+  function renderWingsEditorRows() {
+    if (!dom.wingsEditorList) return;
+    const canRemove = draftWingsState.length > 1;
+    dom.wingsEditorList.innerHTML = draftWingsState
+      .map(
+        (entry, idx) => `
+          <div class="wing-editor-row" data-original-wing="${escapeAttr(entry.original)}">
+            <span class="wing-editor-badge" aria-hidden="true">${idx + 1}</span>
+            <input
+              type="text"
+              class="field-input wing-editor-input"
+              maxlength="48"
+              value="${escapeAttr(entry.label)}"
+              placeholder="e.g. Travel & Spontaneous Dates"
+              aria-label="Wing category ${idx + 1}"
+              required
+            />
+            <button
+              type="button"
+              class="wing-remove-btn"
+              data-remove-wing="${idx}"
+              aria-label="Remove wing ${idx + 1}"
+              title="Remove category"
+              ${canRemove ? "" : "disabled"}
+            >&times;</button>
+          </div>`
+      )
+      .join("");
+
+    if (dom.addWingRowBtn) {
+      dom.addWingRowBtn.disabled = draftWingsState.length >= 8;
+    }
+    if (dom.wingsCountHint) {
+      dom.wingsCountHint.textContent = `${draftWingsState.length} of 8 categories`;
+    }
+  }
+
+  function openWingsModal() {
+    if (!dom.wingsModal) return;
+    setWingsStatus("");
+    const currentWings = sanitizeWings(state.room.wings);
+    draftWingsState = currentWings.map((label) => ({
+      original: label,
+      label,
+    }));
+    renderWingsEditorRows();
+    dom.wingsModal.hidden = false;
+    document.body.style.overflow = "hidden";
+    window.setTimeout(() => {
+      dom.wingsEditorList?.querySelector(".wing-editor-input")?.focus();
+    }, 60);
+  }
+
+  function closeWingsModal() {
+    if (!dom.wingsModal) return;
+    dom.wingsModal.hidden = true;
+    document.body.style.overflow = "";
+  }
+
+  async function handleWingsSubmit(event) {
+    event.preventDefault();
+    syncDraftWingsFromDom();
+
+    const nextWings = [];
+    const seen = new Set();
+    const wingRenames = {};
+
+    for (const entry of draftWingsState) {
+      const cleaned = String(entry.label || "").trim().slice(0, 48);
+      if (!cleaned) continue;
+      const lower = cleaned.toLowerCase();
+      if (seen.has(lower)) {
+        setWingsStatus(`Duplicate wing "${cleaned}". Keep each category unique.`);
+        return;
+      }
+      seen.add(lower);
+      nextWings.push(cleaned);
+      if (entry.original && entry.original !== cleaned) {
+        wingRenames[entry.original] = cleaned;
+      }
+    }
+
+    if (nextWings.length === 0) {
+      setWingsStatus("Keep at least 1 wing category.");
+      return;
+    }
+
+    setWingsStatus("Saving categories...");
+    let savedRoom = null;
+
+    try {
+      const res = await fetch(`/api/museums?pin=${encodeURIComponent(state.pin)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wings: nextWings,
+          wingRenames,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        savedRoom = data?.museum || null;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setWingsStatus(err?.error || "Could not save gallery wings.");
+        return;
+      }
+    } catch (_) {
+      // Offline / static fallback
+    }
+
+    if (state.wingFilter !== "All") {
+      if (wingRenames[state.wingFilter]) {
+        state.wingFilter = wingRenames[state.wingFilter];
+      } else if (!nextWings.includes(state.wingFilter)) {
+        state.wingFilter = "All";
+      }
+    }
+
+    if (savedRoom) {
+      applyRoomPayload(savedRoom);
+    } else {
+      state.room.wings = nextWings;
+      if (Object.keys(wingRenames).length > 0) {
+        state.artifacts = state.artifacts.map((art) => ({
+          ...art,
+          wing: wingRenames[art.wing] || art.wing,
+        }));
+      }
+      syncLocalStorage();
+    }
+
+    renderWingControls();
+    renderAll();
+    closeWingsModal();
+  }
+
+  /* ------------------------------------------------------------------------
      FILTERING & NAVIGATION WIRING
      ------------------------------------------------------------------------ */
   function setWingFilter(wing) {
@@ -2197,10 +2443,45 @@
       if (dom.notePopover) dom.notePopover.hidden = true;
     });
 
-    // Gallery Filter Chips
-    document.querySelectorAll("#wing-filter-group .filter-chip").forEach((btn) => {
-      btn.addEventListener("click", () => setWingFilter(btn.dataset.wing || "All"));
+    // Gallery Filter Chips (delegated so dynamically edited wings work immediately)
+    dom.wingFilterGroup?.addEventListener("click", (e) => {
+      const editBtn = e.target.closest("#open-wings-modal-btn");
+      if (editBtn) {
+        openWingsModal();
+        return;
+      }
+      const chip = e.target.closest(".filter-chip[data-wing]");
+      if (chip) {
+        setWingFilter(chip.dataset.wing || "All");
+      }
     });
+
+    // Wings Category Editor Modal
+    dom.closeWingsModal?.addEventListener("click", closeWingsModal);
+    dom.cancelWingsBtn?.addEventListener("click", closeWingsModal);
+    dom.wingsModal?.addEventListener("click", (e) => {
+      if (e.target === dom.wingsModal) closeWingsModal();
+    });
+    dom.addWingRowBtn?.addEventListener("click", () => {
+      syncDraftWingsFromDom();
+      if (draftWingsState.length >= 8) return;
+      draftWingsState.push({ original: "", label: "" });
+      renderWingsEditorRows();
+      const inputs = dom.wingsEditorList?.querySelectorAll(".wing-editor-input");
+      inputs?.[inputs.length - 1]?.focus();
+    });
+    dom.wingsEditorList?.addEventListener("click", (e) => {
+      const removeBtn = e.target.closest("[data-remove-wing]");
+      if (!removeBtn) return;
+      syncDraftWingsFromDom();
+      if (draftWingsState.length <= 1) return;
+      const idx = Number(removeBtn.dataset.removeWing);
+      if (Number.isInteger(idx) && idx >= 0 && idx < draftWingsState.length) {
+        draftWingsState.splice(idx, 1);
+        renderWingsEditorRows();
+      }
+    });
+    dom.wingsForm?.addEventListener("submit", handleWingsSubmit);
 
     document.querySelectorAll("#curator-filter-group .filter-chip").forEach((btn) => {
       btn.addEventListener("click", () => setCuratorFilter(btn.dataset.curator || "All"));
@@ -2431,6 +2712,7 @@
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if (dom.curateModal && !dom.curateModal.hidden) closeCurateModal();
+        if (dom.wingsModal && !dom.wingsModal.hidden) closeWingsModal();
         if (dom.lightboxModal && !dom.lightboxModal.hidden) closeLightbox();
         if (dom.museumHeirloomModal && !dom.museumHeirloomModal.hidden) closeHeirloomModal();
         if (dom.notePopover && !dom.notePopover.hidden) dom.notePopover.hidden = true;

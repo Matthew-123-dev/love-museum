@@ -35,6 +35,11 @@ HEIRLOOM_PRICE_USD = 7
 DEFAULT_PROPOSAL_PROMPT = (
     "Will you accept Our Love Museum and step inside every memory we have kept?"
 )
+DEFAULT_WINGS = [
+    "First Chapters & Sparks",
+    "Soft Days & Inside Jokes",
+    "Letters, Vows & Forever",
+]
 
 
 class HeirloomRequiredError(ValueError):
@@ -374,6 +379,7 @@ def build_sample_room() -> dict[str, Any]:
         "proposalRejections": 0,
         "paymentProvider": "",
         "paymentRef": "",
+        "wings": copy.deepcopy(DEFAULT_WINGS),
         "foyerNotes": copy.deepcopy(DEFAULT_FOYER_NOTES),
         "artifacts": seed,
     }
@@ -512,6 +518,7 @@ def _normalize_room_schema(room: dict[str, Any]) -> dict[str, Any]:
         room["proposalRejections"] = 0
     room["paymentProvider"] = str(room.get("paymentProvider") or "").strip()
     room["paymentRef"] = str(room.get("paymentRef") or "").strip()
+    room["wings"] = sanitize_wings(room.get("wings"))
     if not isinstance(room.get("foyerNotes"), list) or len(room["foyerNotes"]) != 4:
         room["foyerNotes"] = sanitize_foyer_notes(room.get("foyerNotes"))
     if not isinstance(room.get("artifacts"), list):
@@ -759,6 +766,48 @@ def generate_unique_pin() -> str:
     raise RuntimeError("Could not allocate a unique museum PIN")
 
 
+def sanitize_wings(raw_wings: Any) -> list[str]:
+    """Validate and deduplicate gallery wing category names (1-8 categories)."""
+    if not isinstance(raw_wings, list):
+        return copy.deepcopy(DEFAULT_WINGS)
+
+    cleaned: list[str] = []
+    seen_lower: set[str] = set()
+    for entry in raw_wings:
+        label = str(entry or "").strip()[:48]
+        if not label:
+            continue
+        key = label.casefold()
+        if key in seen_lower:
+            continue
+        seen_lower.add(key)
+        cleaned.append(label)
+        if len(cleaned) >= 8:
+            break
+
+    return cleaned or copy.deepcopy(DEFAULT_WINGS)
+
+
+def _apply_wing_updates(room: dict[str, Any], raw_wings: Any, raw_renames: Any) -> None:
+    """Update room wings and migrate renamed artifact wing tags atomically."""
+    next_wings = sanitize_wings(raw_wings)
+    room["wings"] = next_wings
+
+    if isinstance(raw_renames, dict) and isinstance(room.get("artifacts"), list):
+        rename_map = {
+            str(old or "").strip(): str(new or "").strip()[:48]
+            for old, new in raw_renames.items()
+            if str(old or "").strip() and str(new or "").strip()
+        }
+        if rename_map:
+            for artifact in room["artifacts"]:
+                if not isinstance(artifact, dict):
+                    continue
+                cur_wing = str(artifact.get("wing") or "").strip()
+                if cur_wing in rename_map:
+                    artifact["wing"] = rename_map[cur_wing]
+
+
 def sanitize_foyer_notes(raw_notes: Any) -> list[dict[str, str]]:
     """Build 4 validated Foyer notes, falling back per slot to defaults."""
     if not isinstance(raw_notes, list) or not raw_notes:
@@ -838,6 +887,7 @@ def create_public_museum(payload: dict[str, Any]) -> dict[str, Any]:
         "proposalRejections": 0,
         "paymentProvider": "",
         "paymentRef": "",
+        "wings": copy.deepcopy(DEFAULT_WINGS),
         "foyerNotes": foyer_notes,
         "artifacts": cleaned_artifacts,
     }
@@ -916,6 +966,8 @@ def handle_api_request(
                 return 400, {"error": "Expected a JSON object."}
             if "foyerNotes" in payload:
                 room["foyerNotes"] = sanitize_foyer_notes(payload["foyerNotes"])
+            if "wings" in payload:
+                _apply_wing_updates(room, payload.get("wings"), payload.get("wingRenames"))
             if room.get("isHeirloom"):
                 _apply_heirloom_config(room, payload)
             try:

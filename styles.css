@@ -882,9 +882,10 @@ button:focus-visible {
 .filter-group {
   display: inline-flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
   padding: 5px;
-  border-radius: 9999px;
+  border-radius: 28px;
   background: var(--accent-ivory);
   border: 1.5px solid rgba(146, 13, 37, 0.24);
   box-shadow: 0 6px 16px rgba(43, 3, 10, 0.06);
@@ -910,6 +911,19 @@ button:focus-visible {
   background: var(--bg-crimson);
   color: var(--accent-white);
   font-weight: 700;
+}
+
+.filter-chip--edit {
+  border: 1px dashed rgba(146, 13, 37, 0.34);
+  color: var(--bg-crimson);
+  background: rgba(244, 223, 201, 0.45);
+  font-weight: 600;
+}
+
+.filter-chip--edit:hover {
+  background: var(--bg-warm);
+  border-style: solid;
+  border-color: var(--bg-crimson);
 }
 
 /* Canva Velvet Showcase Wall */
@@ -2985,6 +2999,10 @@ button:focus-visible {
     text-align: center;
   }
 
+  .filter-chip:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
   .gallery-controls > .pill-cta {
     width: 100%;
   }
@@ -3076,4 +3094,84 @@ button:focus-visible {
   .showcase-collage-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Gallery Wings Category Editor Modal */
+.modal-card--wings {
+  width: min(560px, 100%);
+}
+
+.wings-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.wing-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wing-editor-badge {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-warm);
+  color: var(--bg-crimson);
+  border: 1px solid rgba(146, 13, 37, 0.28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.wing-editor-input {
+  flex: 1 1 auto;
+}
+
+.wing-remove-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(146, 13, 37, 0.28);
+  background: var(--accent-white);
+  color: var(--bg-crimson);
+  font-size: 1.15rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.wing-remove-btn:hover:not(:disabled) {
+  background: var(--bg-crimson);
+  border-color: var(--bg-crimson);
+  color: var(--accent-white);
+}
+
+.wing-remove-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.wings-add-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.wings-count-hint {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-on-warm-muted);
 }

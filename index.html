@@ -318,9 +318,10 @@
           <div class="gallery-controls">
             <div class="filter-group" id="wing-filter-group" role="group" aria-label="Filter by Wing">
               <button type="button" class="filter-chip is-active" data-wing="All">All Wings</button>
-              <button type="button" class="filter-chip" data-wing="First Chapters & Sparks">First Chapters</button>
-              <button type="button" class="filter-chip" data-wing="Soft Days & Inside Jokes">Soft Days</button>
-              <button type="button" class="filter-chip" data-wing="Letters, Vows & Forever">Letters &amp; Vows</button>
+              <button type="button" class="filter-chip" data-wing="First Chapters & Sparks">First Chapters &amp; Sparks</button>
+              <button type="button" class="filter-chip" data-wing="Soft Days & Inside Jokes">Soft Days &amp; Inside Jokes</button>
+              <button type="button" class="filter-chip" data-wing="Letters, Vows & Forever">Letters, Vows &amp; Forever</button>
+              <button type="button" class="filter-chip filter-chip--edit" id="open-wings-modal-btn" title="Edit gallery wings" aria-label="Edit gallery wings" hidden>&#9998; Edit Wings</button>
             </div>
 
             <div class="filter-group" id="curator-filter-group" role="group" aria-label="Filter by Curator">
@@ -940,6 +941,50 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- EDIT GALLERY WINGS / CATEGORIES MODAL -->
+  <div
+    class="modal-backdrop"
+    id="wings-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="wings-modal-title"
+    hidden
+  >
+    <div class="modal-card modal-card--wings">
+      <button type="button" class="modal-close-btn" id="close-wings-modal" aria-label="Close gallery wings editor">&times;</button>
+
+      <div class="modal-header">
+        <h3 id="wings-modal-title">Customize Gallery Wings</h3>
+        <p>
+          Rename, add, or remove the category tabs used to filter memories and organize your museum.
+        </p>
+      </div>
+
+      <form id="wings-form" class="curate-form">
+        <div class="wings-editor-list" id="wings-editor-list"></div>
+
+        <div class="wings-add-row">
+          <button type="button" class="pill-cta pill-cta--outline-crimson" id="add-wing-row-btn">
+            + Add Wing Category
+          </button>
+          <span class="wings-count-hint" id="wings-count-hint">Up to 8 categories</span>
+        </div>
+
+        <div class="form-footer">
+          <span class="form-status-msg" id="wings-status-msg" aria-live="polite"></span>
+          <div class="form-buttons">
+            <button type="button" class="pill-cta pill-cta--outline-crimson" id="cancel-wings-btn">
+              Cancel
+            </button>
+            <button type="submit" class="pill-cta pill-cta--crimson" id="save-wings-btn">
+              Save Wings
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 
